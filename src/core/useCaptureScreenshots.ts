@@ -19,9 +19,9 @@ import { withAppPushSuppressed } from "./withAppPushSuppressed";
  * Owns the tool's screenshots: rasterizing a region of the live page, uploading
  * it to the public bucket, and tracking each shot's status for the drawer.
  *
- * Captures are queued rather than run concurrently — html2canvas clones the
- * whole document for every call, so two overlapping runs are both slow and
- * prone to capturing each other's scratch DOM. Queueing also keeps rapid
+ * Captures are queued rather than run concurrently — every call copies the
+ * whole document and briefly marks the live page's sticky and fixed elements,
+ * so two overlapping runs are both slow and would trip over each other's marks. Queueing also keeps rapid
  * multi-pick responsive: the click is never blocked on a rasterize.
  */
 export const useCaptureScreenshots = (

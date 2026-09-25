@@ -1,7 +1,7 @@
 {
   "name": "prompt-this-spot",
   "version": "0.1.0",
-  "description": "Point at a spot in a React app, capture it, and hand an AI coding agent a ready-made prompt \u2014 or file it as user feedback.",
+  "description": "Point at a spot in a React app, capture it, and hand an AI coding agent a ready-made prompt — or file it as user feedback.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -37,7 +37,7 @@
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.1.2",
     "clsx": "^2.1.1",
-    "html2canvas": "^1.4.1",
+    "modern-screenshot": "^4.7.0",
     "tailwind-merge": "^3.3.1"
   },
   "peerDependencies": {

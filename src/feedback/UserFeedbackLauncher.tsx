@@ -22,7 +22,7 @@ type UserFeedbackLauncherProps = {
  *
  * Kept free of heavy imports on purpose. Once the global flag is switched on
  * this renders for every signed-in user, so anything it pulls in is paid for on
- * every page view — the drawer, `html2canvas` and the pick-mode machinery all
+ * every page view — the drawer, the screenshot renderer and the pick-mode machinery all
  * live behind the click-time dynamic import in `UserFeedbackTool`.
  *
  * Shares the inspector's drag/snap behaviour but defaults to the opposite

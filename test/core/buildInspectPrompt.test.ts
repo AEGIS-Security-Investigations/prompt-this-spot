@@ -464,17 +464,17 @@ describe("buildMultiInspectPrompt screenshots", () => {
     expect(prompt.match(/Note:/g)?.length).toBe(2);
   });
 
-  it("tells the agent the shots are renderings, not browser screenshots", () => {
+  it("tells the agent what a screenshot can leave out", () => {
     const prompt = buildMultiInspectPrompt({
       descriptions: [],
       request: "",
       screenshots: [shot({ url: "https://cdn.example.test/p.png" })],
     });
 
-    // Guards against the agent over-trusting pixel-level styling: html2canvas
-    // does not implement CSS masks, backdrop filters or animations.
-    expect(prompt).toContain("html2canvas renderings rather than real browser");
-    expect(prompt).toContain("Trust the DOM details above over pixel-level");
+    // Frames and images without CORS can't be copied into the render, so the
+    // agent must not read a blank patch as a blank element.
+    expect(prompt).toContain("embedded frames and images served without CORS");
+    expect(prompt).toContain("trust the DOM details above");
   });
 
   it("builds a screenshot-only prompt when nothing was picked", () => {

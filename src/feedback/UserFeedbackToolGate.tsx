@@ -6,8 +6,8 @@ import { shouldMountUserFeedbackLauncher } from "./shouldMountUserFeedbackLaunch
 import { UserFeedbackLauncher } from "./UserFeedbackLauncher";
 import { useUserFeedbackLauncherCorner } from "./useUserFeedbackLauncherCorner";
 
-// Client-only. The chunk behind this import carries `html2canvas` and the whole
-// capture core, which is by far the heaviest thing either tool pulls in.
+// Client-only. The chunk behind this import carries the screenshot renderer and
+// the whole capture core, the heaviest thing the feedback tool pulls in.
 //
 // The Suspense fallback keeps the launcher on screen while the chunk is in
 // flight. Without it the button the user just clicked would vanish until the
@@ -43,7 +43,7 @@ function UserFeedbackLauncherPlaceholder() {
  *
  * Stage two is the part that matters once every signed-in user is eligible. A
  * lazily imported component fetches its chunk as soon as the element MOUNTS —
- * so mounting the tool for every eligible user would put `html2canvas` on every
+ * so mounting the tool for every eligible user would put the capture core on every
  * page view just to render a button. The "Prompt this spot" gate can stop at
  * stage one because its audience is a handful of engineers; this one cannot.
  *
