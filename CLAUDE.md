@@ -17,6 +17,11 @@ of them.
   data, or ticket IDs.
 - Run `bun run check` (typecheck, biome, tests) before pushing. Tests live in
   `test/`, mirroring `src/`.
+- After changing Tailwind classes in `src`, run `bun run build:css` and commit
+  `styles/prompt-this-spot.css`, the prebuilt stylesheet for apps without
+  Tailwind.
+- Apps compile the TypeScript source with their own settings, so the source
+  must pass under strict flags such as `noUncheckedIndexedAccess`.
 - A new export that apps need goes in `src/index.ts`.
 - Adding a peer dependency, or raising one's minimum version, is a breaking
   change for every app: call it out in the PR.

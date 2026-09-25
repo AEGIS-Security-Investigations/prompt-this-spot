@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePromptThisSpotConfig } from "../config/PromptThisSpotConfig";
+import { bindAppPushLayout } from "../core/bindAppPushLayout";
 import { getAppPushRoot } from "../core/getAppPushRoot";
 import { computeInspectHighlightBox } from "../core/inspectHighlightBox";
 import { useCaptureController } from "../core/useCaptureController";
@@ -13,8 +14,11 @@ import { useInspectPromptPreferences } from "./InspectPromptPreferencesContext";
 import { useInspectPromptAccess } from "./useInspectPromptAccess";
 import { useInspectPromptShortcut } from "./useInspectPromptShortcut";
 
-/** Width of the left drawer; the app is pushed right by this when it's open. */
-const DRAWER_WIDTH_PX = 360;
+/**
+ * How far the app is pushed while the drawer is open: the drawer's rendered
+ * width, which is `w-[360px] max-w-[90vw]`.
+ */
+const drawerWidthPx = () => Math.min(360, Math.round(window.innerWidth * 0.9));
 
 /**
  * The pick-mode highlight lives in `[data-app-push-root]` (the push-transform
@@ -91,24 +95,7 @@ export const InspectPromptTool = ({ eligible }: { eligible: boolean }) => {
     if (!canUse || !drawerOpen) {
       return;
     }
-    const pushRoot = getAppPushRoot();
-    if (!pushRoot) {
-      return;
-    }
-    const { style } = pushRoot;
-    const previous = {
-      transform: style.transform,
-      width: style.width,
-      transition: style.transition,
-    };
-    style.transition = "transform 300ms ease-in-out, width 300ms ease-in-out";
-    style.transform = `translateX(${DRAWER_WIDTH_PX}px)`;
-    style.width = `calc(100% - ${DRAWER_WIDTH_PX}px)`;
-    return () => {
-      style.transform = previous.transform;
-      style.width = previous.width;
-      style.transition = previous.transition;
-    };
+    return bindAppPushLayout(drawerWidthPx);
   }, [canUse, drawerOpen]);
 
   usePickMode({

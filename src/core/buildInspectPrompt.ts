@@ -85,6 +85,11 @@ export interface MultiInspectPromptContext {
    * for test coverage" in the drawer.
    */
   testCoverage?: boolean;
+  /**
+   * Days before the host app deletes the screenshots, which the prompt tells
+   * the agent. Defaults to 7.
+   */
+  screenshotRetentionDays?: number;
 }
 
 /**
@@ -157,14 +162,15 @@ const pageScreenshotLines = (
  * Tells the agent the links are openable images — and that they are scratch,
  * so it never writes one into code, docs, or a ticket as a durable reference.
  */
-const SCREENSHOT_NOTE = [
-  "(Screenshot links are public PNGs you can open directly.",
-  "They are deleted after 7 days, so don't store them anywhere — read them now.",
-  "They are html2canvas renderings rather than real browser screenshots:",
-  "layout and text are reliable, but CSS masks, backdrop filters and animations",
-  "may differ from the live page. Trust the DOM details above over pixel-level",
-  "styling.)",
-].join("\n");
+const screenshotNote = (retentionDays: number) =>
+  [
+    "(Screenshot links are public PNGs you can open directly.",
+    `They are deleted after ${retentionDays} days, so don't store them anywhere — read them now.`,
+    "They are html2canvas renderings rather than real browser screenshots:",
+    "layout and text are reliable, but CSS masks, backdrop filters and animations",
+    "may differ from the live page. Trust the DOM details above over pixel-level",
+    "styling.)",
+  ].join("\n");
 
 /**
  * Assemble a friendly, copy-pasteable prompt describing the one-or-more spots a
@@ -182,10 +188,12 @@ export const buildMultiInspectPrompt = ({
   request,
   screenshots,
   testCoverage,
+  screenshotRetentionDays = 7,
 }: MultiInspectPromptContext): string => {
   const ready = readyScreenshots(screenshots);
   const pageShotLines = pageScreenshotLines(ready);
-  const note = ready.length > 0 ? ["", SCREENSHOT_NOTE] : [];
+  const note =
+    ready.length > 0 ? ["", screenshotNote(screenshotRetentionDays)] : [];
   const trailer = [
     ...(pageShotLines.length > 0 ? ["", ...pageShotLines] : []),
     "",
@@ -203,8 +211,8 @@ export const buildMultiInspectPrompt = ({
     return ["In our app, here is what I'm looking at:", ...trailer].join("\n");
   }
 
-  if (descriptions.length === 1) {
-    const [only] = descriptions;
+  const [only] = descriptions;
+  if (descriptions.length === 1 && only) {
     return [
       `In our app on the page "${only.pathname}", I'm pointing at this element:`,
       "",

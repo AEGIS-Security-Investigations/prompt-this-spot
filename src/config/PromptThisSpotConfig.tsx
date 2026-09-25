@@ -74,6 +74,17 @@ export interface PromptThisSpotConfig {
   repoSlug?: string;
   /** Stores a "Prompt this spot" screenshot and returns its public URL. */
   uploadPromptScreenshot?: CaptureScreenshotUploader;
+  /**
+   * Show a "Capture screenshots" checkbox in the "Prompt this spot" drawer.
+   * Off by default, for apps that switch the preference from a settings UI of
+   * their own through `useInspectPromptPreferences()`.
+   */
+  promptScreenshotsToggle?: boolean;
+  /**
+   * Days before `uploadPromptScreenshot`'s images are deleted. The prompt tells
+   * the agent, so it reads the links now rather than storing them.
+   */
+  promptScreenshotRetentionDays?: number;
   /** Stores a "Send feedback" screenshot and returns its public URL. */
   uploadFeedbackScreenshot?: CaptureScreenshotUploader;
   /** Persists a feedback report. Reject with an `Error` to show its message. */
@@ -95,6 +106,8 @@ export interface ResolvedPromptThisSpotConfig {
   logError: (message: string, context: Record<string, unknown>) => void;
   repoSlug: string | undefined;
   uploadPromptScreenshot: CaptureScreenshotUploader;
+  promptScreenshotsToggle: boolean;
+  promptScreenshotRetentionDays: number;
   uploadFeedbackScreenshot: CaptureScreenshotUploader;
   submitFeedback: (submission: UserFeedbackSubmission) => Promise<void>;
   feedbackCategories: UserFeedbackCategoryOption[];
@@ -121,6 +134,8 @@ export const resolvePromptThisSpotConfig = (
     }),
   repoSlug: config.repoSlug,
   uploadPromptScreenshot: config.uploadPromptScreenshot ?? noUploader,
+  promptScreenshotsToggle: config.promptScreenshotsToggle ?? false,
+  promptScreenshotRetentionDays: config.promptScreenshotRetentionDays ?? 7,
   uploadFeedbackScreenshot: config.uploadFeedbackScreenshot ?? noUploader,
   submitFeedback: config.submitFeedback ?? noSubmit,
   feedbackCategories:

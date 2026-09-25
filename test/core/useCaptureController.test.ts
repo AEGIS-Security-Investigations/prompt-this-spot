@@ -9,6 +9,10 @@ mock.module("../../src/core/captureDocumentRegion", () => ({
   captureDocumentRegion,
 }));
 
+import type {
+  ElementDescription,
+  InspectPromptScreenshot,
+} from "../../src/core/types";
 import { useCaptureController } from "../../src/core/useCaptureController";
 
 // The uploader is injected now rather than module-mocked, so the test states
@@ -92,7 +96,7 @@ describe("useCaptureController", () => {
     await act(async () => {
       result.current.addSelection(button, "/p");
     });
-    const { id } = result.current.selections[0];
+    const { id } = result.current.selections[0] as ElementDescription;
 
     await act(async () => result.current.removeSelection(id));
     expect(result.current.selections).toHaveLength(0);
@@ -129,9 +133,9 @@ describe("useCaptureController", () => {
       result.current.addSelection(button, "/p");
     });
     expect(result.current.screenshots).toHaveLength(1);
-    expect(result.current.screenshots[0].kind).toBe("element");
-    expect(result.current.screenshots[0].selectionId).toBe(
-      result.current.selections[0].id
+    expect(result.current.screenshots[0]?.kind).toBe("element");
+    expect(result.current.screenshots[0]?.selectionId).toBe(
+      result.current.selections[0]?.id
     );
 
     // Re-picking the same spot is deduped, so it must not queue a second shot.
@@ -148,7 +152,7 @@ describe("useCaptureController", () => {
     await act(async () => {
       result.current.addSelection(button, "/p");
     });
-    const { id } = result.current.selections[0];
+    const { id } = result.current.selections[0] as ElementDescription;
     expect(result.current.screenshots).toHaveLength(1);
 
     await act(async () => result.current.removeSelection(id));
@@ -177,18 +181,18 @@ describe("useCaptureController", () => {
     const { result } = renderController();
     await act(async () => result.current.capturePageScreenshot());
 
-    expect(result.current.screenshots[0].status).toBe("failed");
-    expect(result.current.screenshots[0].error).toBe("canvas blew up");
+    expect(result.current.screenshots[0]?.status).toBe("failed");
+    expect(result.current.screenshots[0]?.error).toBe("canvas blew up");
 
-    const { id } = result.current.screenshots[0];
+    const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
     await act(async () => result.current.retryScreenshot(id));
 
     // The same row recovers in place — no duplicate, no lost selections.
     expect(result.current.screenshots).toHaveLength(1);
-    expect(result.current.screenshots[0].id).toBe(id);
-    expect(result.current.screenshots[0].status).toBe("ready");
-    expect(result.current.screenshots[0].error).toBeNull();
-    expect(result.current.screenshots[0].url).toBe(
+    expect(result.current.screenshots[0]?.id).toBe(id);
+    expect(result.current.screenshots[0]?.status).toBe("ready");
+    expect(result.current.screenshots[0]?.error).toBeNull();
+    expect(result.current.screenshots[0]?.url).toBe(
       "https://cdn.example.com/stub.png"
     );
   });
@@ -196,7 +200,7 @@ describe("useCaptureController", () => {
   it("forgets a removed screenshot's capture so retry cannot resurrect it", async () => {
     const { result } = renderController();
     await act(async () => result.current.capturePageScreenshot());
-    const { id } = result.current.screenshots[0];
+    const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
 
     await act(async () => result.current.removeScreenshot(id));
     await act(async () => result.current.retryScreenshot(id));
@@ -209,17 +213,20 @@ describe("useCaptureController", () => {
     await act(async () => result.current.capturePageScreenshot());
     await act(async () => result.current.capturePageScreenshot());
 
-    const [first, second] = result.current.screenshots;
+    const [first, second] = result.current.screenshots as [
+      InspectPromptScreenshot,
+      InspectPromptScreenshot,
+    ];
     expect(first.note).toBe("");
 
     await act(async () =>
       result.current.setScreenshotNote(first.id, "this column is too wide")
     );
 
-    expect(result.current.screenshots[0].note).toBe("this column is too wide");
+    expect(result.current.screenshots[0]?.note).toBe("this column is too wide");
     // The note is per-shot: its sibling must be untouched.
-    expect(result.current.screenshots[1].note).toBe("");
-    expect(result.current.screenshots[1].id).toBe(second.id);
+    expect(result.current.screenshots[1]?.note).toBe("");
+    expect(result.current.screenshots[1]?.id).toBe(second.id);
   });
 
   it("clearAll also drops captured screenshots", async () => {

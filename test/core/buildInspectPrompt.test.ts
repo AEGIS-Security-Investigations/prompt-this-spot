@@ -53,7 +53,7 @@ describe("buildDomPath", () => {
 
     const ul = host.querySelector("ul") as Element;
     const third = ul.children[2];
-    expect(buildDomPath(third)).toContain("li:nth-of-type(3)");
+    expect(buildDomPath(third as Element)).toContain("li:nth-of-type(3)");
   });
 });
 
@@ -64,8 +64,8 @@ describe("buildUniqueDomKey", () => {
     );
     const buttons = host.querySelectorAll("button");
     // buildDomPath can collide for repeated layouts; the unique key must not.
-    expect(buildUniqueDomKey(buttons[0])).not.toBe(
-      buildUniqueDomKey(buttons[1])
+    expect(buildUniqueDomKey(buttons[0] as Element)).not.toBe(
+      buildUniqueDomKey(buttons[1] as Element)
     );
   });
 });
@@ -359,6 +359,17 @@ describe("buildMultiInspectPrompt screenshots", () => {
       "- Screenshot (this element, with surrounding page for context): https://cdn.example.com/element.png"
     );
     expect(prompt).toContain("deleted after 7 days");
+  });
+
+  it("tells the agent the host app's screenshot retention", () => {
+    const prompt = buildMultiInspectPrompt({
+      descriptions: [],
+      request: "",
+      screenshots: [shot({ url: "https://cdn.example.com/page.png" })],
+      screenshotRetentionDays: 30,
+    });
+
+    expect(prompt).toContain("deleted after 30 days");
   });
 
   it("lists standalone page screenshots after the selections", () => {
