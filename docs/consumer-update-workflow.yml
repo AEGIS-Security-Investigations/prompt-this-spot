@@ -1,0 +1,101 @@
+# Copy into an app's .github/workflows/ to keep its prompt-this-spot dependency
+# on the newest commit of this repository's main branch.
+#
+# The app must depend on the package by commit:
+#   "prompt-this-spot": "github:AEGIS-Security-Investigations/prompt-this-spot#<sha>"
+#
+# When main has moved, this updates package.json and the lockfile and opens (or
+# refreshes) one pull request listing the commits it brings in.
+#
+# Pull requests opened with the default GITHUB_TOKEN do not start other
+# workflows, so the app's CI will not run on them by itself. Set a
+# PROMPT_THIS_SPOT_PR_TOKEN secret (a token that can push branches and open
+# pull requests) if CI should run automatically; otherwise push an empty
+# change or re-run CI from the PR.
+
+name: Update prompt-this-spot
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  repository_dispatch:
+    types: [prompt-this-spot-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-prompt-this-spot
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE: prompt-this-spot
+      SOURCE_REPO: AEGIS-Security-Investigations/prompt-this-spot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Find the newest commit
+        id: versions
+        run: |
+          latest="$(git ls-remote "https://github.com/$SOURCE_REPO" refs/heads/main | cut -f1)"
+          current="$(jq -r --arg p "$PACKAGE" '.dependencies[$p] // .devDependencies[$p] // ""' package.json | sed -n 's/.*#//p')"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          if [ -z "$latest" ] || [ "$latest" = "$current" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Already on ${current:-<none>}."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Updating ${current:-<none>} -> $latest."
+          fi
+
+      - name: Update the dependency and lockfile
+        if: steps.versions.outputs.changed == 'true'
+        env:
+          LATEST: ${{ steps.versions.outputs.latest }}
+        run: |
+          spec="github:$SOURCE_REPO#$LATEST"
+          tmp="$(mktemp)"
+          jq --indent 2 --arg p "$PACKAGE" --arg v "$spec" \
+            'if .dependencies[$p] then .dependencies[$p] = $v else .devDependencies[$p] = $v end' \
+            package.json > "$tmp"
+          mv "$tmp" package.json
+          bun install --ignore-scripts
+
+      - name: List the incoming changes
+        if: steps.versions.outputs.changed == 'true'
+        env:
+          CURRENT: ${{ steps.versions.outputs.current }}
+          LATEST: ${{ steps.versions.outputs.latest }}
+        run: |
+          {
+            echo "Updates \`$PACKAGE\` to [\`${LATEST:0:7}\`](https://github.com/$SOURCE_REPO/commit/$LATEST)."
+            echo
+            if [ -n "$CURRENT" ]; then
+              echo "Changes since \`${CURRENT:0:7}\` ([full diff](https://github.com/$SOURCE_REPO/compare/$CURRENT...$LATEST)):"
+              echo
+              curl -sS "https://api.github.com/repos/$SOURCE_REPO/compare/$CURRENT...$LATEST" \
+                | jq -r '.commits[]? | "- " + (.commit.message | split("\n")[0]) + " (" + .sha[0:7] + ")"'
+            fi
+            echo
+            echo "Opened by the Update prompt-this-spot workflow."
+          } > "$RUNNER_TEMP/pr-body.md"
+
+      - name: Open or refresh the pull request
+        if: steps.versions.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PROMPT_THIS_SPOT_PR_TOKEN || secrets.GITHUB_TOKEN }}
+          branch: chore/update-prompt-this-spot
+          delete-branch: true
+          commit-message: "chore: update prompt-this-spot to ${{ steps.versions.outputs.latest }}"
+          title: "chore: update prompt-this-spot"
+          body-path: ${{ runner.temp }}/pr-body.md
+          labels: dependencies

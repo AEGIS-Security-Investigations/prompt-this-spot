@@ -1,0 +1,44 @@
+name: Notify consumer apps
+
+# After a change lands on main, ask each app that depends on this package to run
+# its "Update prompt-this-spot" workflow now instead of waiting for its schedule.
+# Needs a CONSUMER_DISPATCH_TOKEN secret that can send repository_dispatch
+# events to the repositories below; without it this job does nothing and the
+# apps still pick the change up on their own schedule.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repository:
+          - AEGIS-Security-Investigations/license-verification
+          - AEGIS-Security-Investigations/taskvoice
+    steps:
+      - name: Send repository_dispatch
+        env:
+          TOKEN: ${{ secrets.CONSUMER_DISPATCH_TOKEN }}
+          REPOSITORY: ${{ matrix.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "CONSUMER_DISPATCH_TOKEN is not set; $REPOSITORY will update on its own schedule."
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPOSITORY/dispatches" \
+            -d "{\"event_type\":\"prompt-this-spot-updated\",\"client_payload\":{\"sha\":\"$SHA\"}}"
