@@ -2,6 +2,7 @@
 
 import { createContext, destroyContext, domToPng } from "modern-screenshot";
 import { createOffscreenPruner } from "./createOffscreenPruner";
+import { deferUnpaintableLazyImages } from "./deferUnpaintableLazyImages";
 import { computeCaptureScale } from "./inspectCaptureRect";
 import { pinScrollAnchoredElements } from "./pinScrollAnchoredElements";
 import { resolveCaptureRoot } from "./resolveCaptureRoot";
@@ -146,6 +147,7 @@ export const captureDocumentRegion = async (
   const isDocument = root.element === document.documentElement;
   const pins = pinScrollAnchoredElements(document, isInsideIgnored, root);
   const isOnscreen = createOffscreenPruner(rect, root.element, root.overlays);
+  const lazyImages = deferUnpaintableLazyImages(root.element, rect);
 
   try {
     const context = await createContext(root.element, {
@@ -192,6 +194,9 @@ export const captureDocumentRegion = async (
         );
       },
     });
+    // Only `createContext` waits on images; the copy is made by `domToPng`,
+    // so the page gets its sources back before anything is copied.
+    lazyImages.release();
 
     try {
       return await domToPng(context);
@@ -199,6 +204,7 @@ export const captureDocumentRegion = async (
       destroyContext(context);
     }
   } finally {
+    lazyImages.release();
     pins.release();
   }
 };
