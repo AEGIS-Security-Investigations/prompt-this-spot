@@ -1,11 +1,74 @@
-# prompt-this-spot
+# prompt-this-spot: click any element in your React app and get a ready-made prompt for an AI coding agent
 
-Two in-app tools for React apps that share one capture core:
+**prompt-this-spot** is an open-source React component library that turns "this button here" into a precise prompt for an AI coding agent such as Claude Code, Cursor or GitHub Copilot. You click the parts of a page you want changed, type what you want, and it writes a prompt that names each element by its visible text, HTML tag, attributes, CSS classes and DOM path, with a screenshot link attached. The same capture core also powers an in-app **user feedback widget** with screenshots and bug reports.
 
-- **Prompt this spot**: an engineer clicks the parts of a page they want changed, types what they want, and gets a prompt for an AI coding agent. The prompt describes each element (DOM path, visible text, styles) and links a screenshot of it. They can copy the prompt, open it in Claude Code on the web, or open it in a local Claude Code install. The keyboard shortcut is ⌘/Ctrl + Shift + P.
-- **Send feedback**: a user of the app points at what's wrong, adds screenshots, picks a category and describes the problem. The report goes to your backend with the same AI prompt already assembled, so someone triaging it can hand it straight to an agent.
+- **License:** MIT
+- **Works with:** React 19, Next.js, Tailwind CSS v3 and v4, shadcn/ui
+- **Output:** plain-text prompts you can paste into any AI coding assistant, plus one-click links for Claude Code on the web and the Claude Code desktop and CLI app
+- **Backend:** none included; you plug in your own screenshot storage and feedback endpoint
 
-Both tools open as a left-hand drawer that pushes the app aside, so the page stays visible and clickable. Pick mode works inside open dialogs and popovers, and both launchers can be dragged to any corner.
+## Contents
+
+- [Why prompt-this-spot](#why-prompt-this-spot)
+- [Features](#features)
+- [Example prompt](#example-prompt)
+- [How it works](#how-it-works)
+- [Install](#install)
+- [Set up](#set-up)
+- [Configuration](#configuration)
+- [Keeping apps up to date](#keeping-apps-up-to-date)
+- [FAQ](#faq)
+- [Developing](#developing)
+
+## Why prompt-this-spot
+
+AI coding agents are good at changing code but bad at guessing which part of the UI you mean. "Make the upgrade button bigger" leaves the agent searching the codebase for the right button on the right page. prompt-this-spot gives the agent the missing context: the route, the exact element, its classes and test ID, its location in the DOM, and a picture of it. The agent can go straight to the component instead of guessing.
+
+It helps two groups of people:
+
+- **Developers, designers and product reviewers** doing visual QA who want to hand UI changes to an AI agent without describing the page in words.
+- **Users of your app** who want to report a bug or suggest an improvement by pointing at it. Their report arrives with the same AI-ready prompt already written, so triage can go straight to an agent.
+
+## Features
+
+It ships two tools that share one capture core:
+
+- **Prompt this spot** (element inspector for AI prompts): an engineer clicks the parts of a page they want changed, types what they want, and gets a prompt for an AI coding agent. The prompt describes each element (DOM path, visible text, styles) and links a screenshot of it. They can copy the prompt, open it in Claude Code on the web, or open it in a local Claude Code install. The keyboard shortcut is ⌘/Ctrl + Shift + P.
+- **Send feedback** (in-app feedback and bug report widget): a user of the app points at what's wrong, adds screenshots, picks a category and describes the problem. The report goes to your backend with the same AI prompt already assembled, so someone triaging it can hand it straight to an agent.
+
+Both tools also:
+
+- Select several elements at once, even across page navigations, and describe them in one numbered prompt.
+- Capture element and full-page screenshots in the browser with `html2canvas`, with an optional note on each.
+- Open as a left-hand drawer that pushes the app aside, so the page stays visible and clickable.
+- Pick elements inside open dialogs, popovers and menus.
+- Offer launchers that can be dragged to any corner and remember their position.
+- Support light and dark mode, and take your brand colors through Tailwind class overrides.
+- Stay out of the bundle for users who aren't allowed to use them (the heavy code loads on demand).
+
+## Example prompt
+
+Clicking an "Upgrade plan" button on `/settings/billing` and typing a request produces this prompt:
+
+```text
+In our app on the page "/settings/billing", I'm pointing at this element:
+
+- What it shows: "Upgrade plan"
+- Element: <button> data-testid="upgrade-plan"
+- Classes: btn btn-primary
+- Location (DOM path): button[data-testid="upgrade-plan"]
+
+What I want changed here: Make this button full width on mobile
+```
+
+When screenshots are on, each element also gets a public screenshot URL the agent can open. An optional checkbox appends a request for unit and end-to-end test coverage.
+
+## How it works
+
+1. **Pick.** Pick mode highlights the element under the cursor. A click records a description of the element straight away, so it survives the element unmounting later (for example, when its dialog closes).
+2. **Capture.** The package renders a screenshot of the element and its surroundings in the browser and hands the PNG to your upload function, which returns a public URL.
+3. **Assemble.** It builds a plain-text prompt from the page path, element descriptions, screenshot links and your request.
+4. **Hand off.** "Prompt this spot" copies the prompt or opens it in Claude Code. "Send feedback" passes it, with the rest of the report, to your `submitFeedback` function.
 
 The package ships as TypeScript source. It uses React 19, Tailwind CSS classes, shadcn/ui theme tokens, Radix primitives and `html2canvas`. It has no backend: your app supplies the pieces that differ between apps (who may use each tool, where screenshots are stored, where feedback goes) through one provider.
 
@@ -163,6 +226,36 @@ If the classes live in your app's source files, Tailwind already scans them.
 An app pinned to a commit doesn't pick up changes by itself. [`docs/consumer-update-workflow.yml`](docs/consumer-update-workflow.yml) is a GitHub Actions workflow you can copy into an app's `.github/workflows/`. On a schedule (and whenever this repo notifies it), it finds the newest commit on `main`, updates the dependency and lockfile, and opens a pull request that lists the changes. You review and merge it like any other PR.
 
 To get those PRs right after a merge here, not just on the schedule, add a `CONSUMER_DISPATCH_TOKEN` secret to this repository and list the apps in `.github/workflows/notify-consumers.yml`. The token needs permission to send `repository_dispatch` events to those apps (for a fine-grained token, contents read and write).
+
+## FAQ
+
+### What is prompt-this-spot?
+
+A React library that lets you click an element in a running web app and get a text prompt describing that element for an AI coding agent. It also includes an in-app feedback widget that attaches the same prompt and screenshots to user bug reports.
+
+### Which AI coding agents does it work with?
+
+Any agent that accepts text. The prompt is plain text, so you can paste it into Claude Code, Cursor, GitHub Copilot, Windsurf, ChatGPT or another assistant. There are also one-click buttons that open the prompt in Claude Code on the web (with your repository pre-selected) or in a local Claude Code install.
+
+### Does it work with Next.js?
+
+Yes. Add the package to `transpilePackages` and to Tailwind's content scan, as shown in [Install](#install). Other React 19 setups should work too, as long as their bundler compiles TypeScript from `node_modules` and Tailwind scans the package's source.
+
+### Does it need a backend or a paid service?
+
+No hosted service is involved. You provide two small routes of your own: one that stores a PNG and returns a public URL, and one that saves feedback. `createScreenshotUploader` handles the client side of the upload.
+
+### Can end users see it?
+
+Only if you let them. Each tool has an `eligible` flag, so you can show "Prompt this spot" to admins or internal staff and "Send feedback" to every signed-in user, or neither.
+
+### How are screenshots taken?
+
+In the browser with `html2canvas`, so no extension or screen-recording permission is needed. Layout and text are accurate; some effects (CSS masks, backdrop filters, animations) may render differently from the live page, and the prompt tells the agent to trust the DOM details over pixel-level styling.
+
+### Is it on npm?
+
+Not yet. Install it from GitHub, pinned to a tag or commit.
 
 ## Developing
 
