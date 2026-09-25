@@ -361,6 +361,17 @@ describe("buildMultiInspectPrompt screenshots", () => {
     expect(prompt).toContain("deleted after 7 days");
   });
 
+  it("tells the agent the host app's screenshot retention", () => {
+    const prompt = buildMultiInspectPrompt({
+      descriptions: [],
+      request: "",
+      screenshots: [shot({ url: "https://cdn.example.com/page.png" })],
+      screenshotRetentionDays: 30,
+    });
+
+    expect(prompt).toContain("deleted after 30 days");
+  });
+
   it("lists standalone page screenshots after the selections", () => {
     const first = describe1(`<button data-testid="a">A</button>`, "/a");
     const second = describe1(`<button data-testid="b">B</button>`, "/b");

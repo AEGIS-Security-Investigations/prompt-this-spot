@@ -43,7 +43,11 @@ export const useInspectPromptActions = (
   /** Whether the prompt should also ask the agent for unit + e2e coverage. */
   testCoverage: boolean
 ): InspectPromptActions => {
-  const { notify: toast, repoSlug } = usePromptThisSpotConfig();
+  const {
+    notify: toast,
+    repoSlug,
+    promptScreenshotRetentionDays,
+  } = usePromptThisSpotConfig();
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
 
   const builtPrompt = useMemo(
@@ -53,8 +57,15 @@ export const useInspectPromptActions = (
         request,
         screenshots,
         testCoverage,
+        screenshotRetentionDays: promptScreenshotRetentionDays,
       }),
-    [selections, request, screenshots, testCoverage]
+    [
+      selections,
+      request,
+      screenshots,
+      testCoverage,
+      promptScreenshotRetentionDays,
+    ]
   );
 
   const [rawPrompt, setRawPrompt] = useState(builtPrompt);

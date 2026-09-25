@@ -319,6 +319,7 @@ Every field of `PromptThisSpotConfig` is optional:
 | `logError(message, context)` | `console.error` | Reports a screenshot that failed |
 | `repoSlug` | none | GitHub `owner/name` that "Send to Claude Code" opens |
 | `uploadPromptScreenshot` / `uploadFeedbackScreenshot` | throws | Screenshot storage (see above) |
+| `promptScreenshotRetentionDays` | `7` | How many days "Prompt this spot" tells the agent the screenshot links last; match it to what your storage keeps |
 | `promptScreenshotsToggle` | `false` | Shows a "Capture screenshots" checkbox in the "Prompt this spot" drawer, for apps without a settings UI of their own for that preference |
 | `submitFeedback` | throws | Feedback storage (see above) |
 | `feedbackCategories` | Broken / Confusing / Idea / Praise / Other | `{ value, label }[]` for the feedback form; the first one is preselected |
