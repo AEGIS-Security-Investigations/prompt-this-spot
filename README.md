@@ -3,7 +3,7 @@
 **prompt-this-spot** is an open-source React component library that turns "this button here" into a precise prompt for an AI coding agent such as Claude Code, Cursor or GitHub Copilot. You click the parts of a page you want changed, type what you want, and it writes a prompt that names each element by its visible text, HTML tag, attributes, CSS classes and DOM path, with a screenshot link attached. The same capture core also powers an in-app **user feedback widget** with screenshots and bug reports.
 
 - **License:** MIT
-- **Works with:** React 19, Next.js, Tailwind CSS v3 and v4, shadcn/ui
+- **Works with:** React 19, Next.js, Tailwind CSS v3 and v4, shadcn/ui, and apps without Tailwind through a prebuilt stylesheet
 - **Output:** plain-text prompts you can paste into any AI coding assistant, plus one-click links for Claude Code on the web and the Claude Code desktop and CLI app
 - **Backend:** none included; you plug in your own screenshot storage and feedback endpoint
 
@@ -85,7 +85,7 @@ Adding prompt-this-spot to a React app takes six steps. The examples use Next.js
 
 Then [check that it works](#check-that-it-works). If something looks wrong, see [Troubleshooting](#troubleshooting).
 
-**Before you start**, your app needs React 19 and Tailwind CSS (v3 or v4). shadcn/ui is not required, but its theme tokens are (see step 3).
+**Before you start**, your app needs React 19. With Tailwind CSS (v3 or v4) the package's classes compile with the rest of your app; without it, import the prebuilt stylesheet instead (see step 3). shadcn/ui is not required.
 
 ### Let an AI coding agent install it
 
@@ -149,6 +149,18 @@ content: [
 ```
 
 The tools use shadcn/ui theme tokens (`bg-card`, `text-muted-foreground`, `bg-popover`, `ring-ring`, `bg-primary`, `text-destructive`) and `tailwindcss-animate` classes (`animate-in`, `fade-in-0`, `zoom-in-95`). If your app uses shadcn/ui, these are already defined. If it doesn't, define those colors in your Tailwind theme and add `tailwindcss-animate` (or `tw-animate-css` on v4). Dark mode follows the `class` strategy (`<html class="dark">`).
+
+#### No Tailwind? Import the prebuilt stylesheet
+
+Apps that don't run Tailwind import the compiled stylesheet once, for example in the root layout, and skip the content scan above:
+
+```ts
+import "prompt-this-spot/styles.css";
+```
+
+It holds only the classes the package uses, a reset scoped to the tools' own elements (everything marked `data-inspect-ignore`), the enter and exit animations, and default light and dark values for the theme colors. It doesn't restyle the rest of your app. To change a theme color, set its `--pts-*` custom property, for example `:root { --pts-primary: #0f766e; }`. The properties are `--pts-background`, `--pts-foreground`, `--pts-card`, `--pts-card-foreground`, `--pts-popover`, `--pts-popover-foreground`, `--pts-primary`, `--pts-primary-foreground`, `--pts-muted`, `--pts-muted-foreground`, `--pts-accent`, `--pts-accent-foreground`, `--pts-destructive`, `--pts-border`, `--pts-input` and `--pts-ring`.
+
+Don't import it in an app that already scans the package with Tailwind: the two would define the same classes twice.
 
 ### 4. Add a provider component
 
@@ -289,7 +301,7 @@ Screenshot URLs are public, so anyone with a link can open the image. If your ap
 | Symptom | Fix |
 |---|---|
 | The build fails with "Unexpected token" or "Module parse failed" in `prompt-this-spot` | Add the package to `transpilePackages` (step 2). |
-| The drawers or launchers are unstyled, transparent or oddly placed | Tailwind isn't scanning the package (step 3), or the shadcn/ui color tokens aren't defined. |
+| The drawers or launchers are unstyled, transparent or oddly placed | Tailwind isn't scanning the package (step 3), or the shadcn/ui color tokens aren't defined. Without Tailwind, import `prompt-this-spot/styles.css`. |
 | The drawer covers the page instead of pushing it aside | Add `data-app-push-root` to the element that wraps your app, and keep the gates outside it (step 4). |
 | No launcher appears | Check that `eligible` is true for the signed-in user. The "Prompt this spot" launcher can also be switched off through its `enabled` preference, which is stored in `localStorage`; read or reset it with `useInspectPromptPreferences()`. |
 | The feedback launcher is missing in Playwright or Cypress | Automated browsers don't see it unless the `sessionStorage` key in `feedbackE2eOptInStorageKey` is `"1"` (see [Configuration](#configuration)). |
@@ -307,6 +319,7 @@ Every field of `PromptThisSpotConfig` is optional:
 | `logError(message, context)` | `console.error` | Reports a screenshot that failed |
 | `repoSlug` | none | GitHub `owner/name` that "Send to Claude Code" opens |
 | `uploadPromptScreenshot` / `uploadFeedbackScreenshot` | throws | Screenshot storage (see above) |
+| `promptScreenshotsToggle` | `false` | Shows a "Capture screenshots" checkbox in the "Prompt this spot" drawer, for apps without a settings UI of their own for that preference |
 | `submitFeedback` | throws | Feedback storage (see above) |
 | `feedbackCategories` | Broken / Confusing / Idea / Praise / Other | `{ value, label }[]` for the feedback form; the first one is preselected |
 | `feedbackTheme` | neutral blue | Tailwind class overrides for any part of the feedback widget (see `defaultUserFeedbackTheme`) |
@@ -368,6 +381,12 @@ Not yet. Install it from GitHub, pinned to a commit (see [Add the package](#1-ad
 ```bash
 bun install
 bun run check   # typecheck + biome + tests
+```
+
+If you add or change a Tailwind class in `src`, rebuild the prebuilt stylesheet and commit it with the change (CI fails when it's out of date):
+
+```bash
+bun run build:css
 ```
 
 To try a change in an app before it's merged, link your local checkout:

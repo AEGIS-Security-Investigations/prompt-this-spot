@@ -1,0 +1,149 @@
+/*
+ * Source for `styles/prompt-this-spot.css`, the prebuilt stylesheet for apps that
+ * don't run Tailwind. `bun run build:css` compiles it; don't edit the output.
+ *
+ * It holds only the utilities the package's own source uses, the shadcn/ui
+ * color tokens they read (overridable through `--pts-*` custom properties), the
+ * enter/exit animations, and a reset scoped to the tools' own elements, so it
+ * never restyles the host app.
+ */
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css" source(none);
+@import "tw-animate-css";
+@source "../src";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--pts-background);
+  --color-foreground: var(--pts-foreground);
+  --color-card: var(--pts-card);
+  --color-card-foreground: var(--pts-card-foreground);
+  --color-popover: var(--pts-popover);
+  --color-popover-foreground: var(--pts-popover-foreground);
+  --color-primary: var(--pts-primary);
+  --color-primary-foreground: var(--pts-primary-foreground);
+  --color-muted: var(--pts-muted);
+  --color-muted-foreground: var(--pts-muted-foreground);
+  --color-accent: var(--pts-accent);
+  --color-accent-foreground: var(--pts-accent-foreground);
+  --color-destructive: var(--pts-destructive);
+  --color-border: var(--pts-border);
+  --color-input: var(--pts-input);
+  --color-ring: var(--pts-ring);
+}
+
+/* Zero specificity, so any rule the host app writes for these properties wins. */
+:where(:root) {
+  --pts-background: #ffffff;
+  --pts-foreground: #0a0a0a;
+  --pts-card: #ffffff;
+  --pts-card-foreground: #0a0a0a;
+  --pts-popover: #ffffff;
+  --pts-popover-foreground: #0a0a0a;
+  --pts-primary: #171717;
+  --pts-primary-foreground: #fafafa;
+  --pts-muted: #f5f5f5;
+  --pts-muted-foreground: #737373;
+  --pts-accent: #f5f5f5;
+  --pts-accent-foreground: #171717;
+  --pts-destructive: #dc2626;
+  --pts-border: #e5e5e5;
+  --pts-input: #e5e5e5;
+  --pts-ring: #a3a3a3;
+}
+
+:where(.dark) {
+  --pts-background: #0a0a0a;
+  --pts-foreground: #fafafa;
+  --pts-card: #171717;
+  --pts-card-foreground: #fafafa;
+  --pts-popover: #171717;
+  --pts-popover-foreground: #fafafa;
+  --pts-primary: #e5e5e5;
+  --pts-primary-foreground: #171717;
+  --pts-muted: #262626;
+  --pts-muted-foreground: #a3a3a3;
+  --pts-accent: #262626;
+  --pts-accent-foreground: #fafafa;
+  --pts-destructive: #f87171;
+  --pts-border: #ffffff1a;
+  --pts-input: #ffffff26;
+  --pts-ring: #737373;
+}
+
+/*
+ * Tailwind's preflight, trimmed to what the tools render and scoped to their
+ * chrome (every drawer, launcher and dialog carries `data-inspect-ignore`).
+ */
+:where([data-inspect-ignore]) {
+  font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where([data-inspect-ignore], [data-inspect-ignore] *),
+:where([data-inspect-ignore], [data-inspect-ignore] *)::before,
+:where([data-inspect-ignore], [data-inspect-ignore] *)::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+}
+
+:where([data-inspect-ignore] :is(h1, h2, h3, h4, h5, h6)) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+:where([data-inspect-ignore] a) {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+:where([data-inspect-ignore] :is(code, kbd, samp, pre)) {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 1em;
+}
+
+:where([data-inspect-ignore] :is(ol, ul, menu)) {
+  list-style: none;
+}
+
+:where([data-inspect-ignore] :is(img, svg, video, canvas)) {
+  display: block;
+  vertical-align: middle;
+}
+
+:where([data-inspect-ignore] :is(img, video)) {
+  max-width: 100%;
+  height: auto;
+}
+
+:where([data-inspect-ignore] :is(button, input, select, textarea)) {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  border-radius: 0;
+  background-color: transparent;
+  opacity: 1;
+}
+
+:where([data-inspect-ignore] button) {
+  appearance: button;
+  cursor: pointer;
+}
+
+:where([data-inspect-ignore]) ::placeholder {
+  opacity: 1;
+  color: color-mix(in oklab, currentcolor 50%, transparent);
+}
+
+:where([data-inspect-ignore] textarea) {
+  resize: vertical;
+}
+
+:where([data-inspect-ignore] [hidden]:not([hidden="until-found"])) {
+  display: none !important;
+}

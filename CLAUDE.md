@@ -15,7 +15,10 @@ of them.
   resolve to the app's own files.
 - This is a public repository. Never commit secrets, internal URLs, customer
   data, or ticket IDs.
-- Run `bun run check` (typecheck, biome, tests) before pushing. Tests live in
+- Run `bun run check` (typecheck, biome, tests) before pushing. After changing
+  Tailwind classes in `src`, run `bun run build:css` and commit
+  `styles/prompt-this-spot.css` (the prebuilt stylesheet for apps without
+  Tailwind). Tests live in
   `test/`, mirroring `src/`.
 - A new export that apps need goes in `src/index.ts`.
 - Adding a peer dependency, or raising one's minimum version, is a breaking

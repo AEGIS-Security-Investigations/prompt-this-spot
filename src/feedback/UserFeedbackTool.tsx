@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePromptThisSpotConfig } from "../config/PromptThisSpotConfig";
+import { bindAppPushLayout } from "../core/bindAppPushLayout";
 import { getAppPushRoot } from "../core/getAppPushRoot";
 import { computeInspectHighlightBox } from "../core/inspectHighlightBox";
 import { useCaptureController } from "../core/useCaptureController";
@@ -115,24 +116,7 @@ export const UserFeedbackTool = () => {
     if (!drawerOpen || window.innerWidth < PUSH_MIN_VIEWPORT_PX) {
       return;
     }
-    const pushRoot = getAppPushRoot();
-    if (!pushRoot) {
-      return;
-    }
-    const { style } = pushRoot;
-    const previous = {
-      transform: style.transform,
-      width: style.width,
-      transition: style.transition,
-    };
-    style.transition = "transform 300ms ease-in-out, width 300ms ease-in-out";
-    style.transform = `translateX(${DRAWER_WIDTH_PX}px)`;
-    style.width = `calc(100% - ${DRAWER_WIDTH_PX}px)`;
-    return () => {
-      style.transform = previous.transform;
-      style.width = previous.width;
-      style.transition = previous.transition;
-    };
+    return bindAppPushLayout(() => DRAWER_WIDTH_PX);
   }, [drawerOpen]);
 
   if (!mounted) {

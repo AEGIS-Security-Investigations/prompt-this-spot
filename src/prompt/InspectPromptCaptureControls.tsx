@@ -1,8 +1,10 @@
 "use client";
 
 import { Camera, Loader2, MousePointerClick } from "lucide-react";
+import { usePromptThisSpotConfig } from "../config/PromptThisSpotConfig";
 import { cn } from "../lib/cn";
 import { useInspectPromptPreferences } from "./InspectPromptPreferencesContext";
+import { InspectPromptScreenshotsOption } from "./InspectPromptScreenshotsOption";
 import {
   inspectPromptActionButton,
   inspectPromptHint,
@@ -31,6 +33,7 @@ export const InspectPromptCaptureControls = ({
   onCapturePage,
 }: InspectPromptCaptureControlsProps) => {
   const { screenshotsEnabled } = useInspectPromptPreferences();
+  const { promptScreenshotsToggle } = usePromptThisSpotConfig();
 
   return (
     <div className={cn("border-b px-4 py-3", inspectPromptSectionDivider)}>
@@ -62,7 +65,7 @@ export const InspectPromptCaptureControls = ({
           ) : (
             <Camera className="h-3.5 w-3.5 shrink-0" />
           )}
-          {capturing ? "Capturing…" : "Screenshot page"}
+          {capturing ? "Capturing" : "Screenshot page"}
         </button>
       ) : null}
 
@@ -75,6 +78,8 @@ export const InspectPromptCaptureControls = ({
             ? "Enable pick mode, then click UI targets. The app stays usable while this panel is open."
             : "Enable pick mode, then click UI targets. Screenshots are switched off."}
       </p>
+
+      {promptScreenshotsToggle ? <InspectPromptScreenshotsOption /> : null}
     </div>
   );
 };
