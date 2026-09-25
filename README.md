@@ -162,6 +162,10 @@ It holds only the classes the package uses, a reset scoped to the tools' own ele
 
 Don't import it in an app that already scans the package with Tailwind: the two would define the same classes twice.
 
+#### Bundlers without tree shaking (Expo web)
+
+Metro, the bundler for Expo web, doesn't tree-shake, so importing from `prompt-this-spot` bundles both tools into your first page load, even for users who never see them. An app that only mounts "Prompt this spot" imports from `prompt-this-spot/inspect-prompt` instead. It has the provider, `createScreenshotUploader`, the preferences and launcher-stack providers and `InspectPromptToolGate`, and it loads the tool itself only when the gate opens.
+
 ### 4. Add a provider component
 
 Create one client component that wraps your app. It supplies your app's adapters and mounts the two tools:

@@ -11,6 +11,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./inspect-prompt": "./src/inspect-prompt.ts",
     "./styles.css": "./styles/prompt-this-spot.css",
     "./package.json": "./package.json"
   },
