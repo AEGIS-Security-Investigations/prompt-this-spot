@@ -6,7 +6,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 //
 // A lazily imported component fetches its chunk as soon as the element mounts,
 // so mounting `InspectPromptTool` unconditionally would make every ineligible
-// user download and parse its chunk (`@uiw/react-codemirror` + `html2canvas`)
+// user download and parse its chunk (`@uiw/react-codemirror` + the capture core)
 // on every page view just to have the in-component gate render nothing. This
 // gate decides whether to mount at all; the in-component gate is unchanged and
 // remains the authoritative one.

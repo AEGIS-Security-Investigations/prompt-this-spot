@@ -63,7 +63,7 @@ export const computePaddedElementCaptureRect = ({
   const right = rect.left + scrollX + rect.width + padding;
   const bottom = rect.top + scrollY + rect.height + padding;
 
-  // Clamp to the document so html2canvas never renders past the page bounds
+  // Clamp to the document so a capture never renders past the page bounds
   // (which produces blank bands and inflates the upload for no context gain).
   const clampedLeft = Math.max(0, Math.floor(left));
   const clampedTop = Math.max(0, Math.floor(top));

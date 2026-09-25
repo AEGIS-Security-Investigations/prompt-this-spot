@@ -166,10 +166,9 @@ const screenshotNote = (retentionDays: number) =>
   [
     "(Screenshot links are public PNGs you can open directly.",
     `They are deleted after ${retentionDays} days, so don't store them anywhere — read them now.`,
-    "They are html2canvas renderings rather than real browser screenshots:",
-    "layout and text are reliable, but CSS masks, backdrop filters and animations",
-    "may differ from the live page. Trust the DOM details above over pixel-level",
-    "styling.)",
+    "The browser drew them from a copy of the page, so they match what the user saw,",
+    "except that embedded frames and images served without CORS can come out blank.",
+    "If something is missing from a screenshot, trust the DOM details above.)",
   ].join("\n");
 
 /**

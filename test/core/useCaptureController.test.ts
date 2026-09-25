@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
 
-// Picking an element also queues a real html2canvas render + upload. Neither
+// Picking an element also queues a real browser render + upload. Neither
 // exists under happy-dom, so stub the two edges and keep this a state test.
 const captureDocumentRegion = mock(async () => "data:image/png;base64,stub");
 

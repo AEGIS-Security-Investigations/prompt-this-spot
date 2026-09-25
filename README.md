@@ -39,7 +39,7 @@ It ships two tools that share one capture core:
 Both tools also:
 
 - Select several elements at once, even across page navigations, and describe them in one numbered prompt.
-- Capture element and full-page screenshots in the browser with `html2canvas`, with an optional note on each.
+- Capture element and full-page screenshots in the browser with `modern-screenshot`, with an optional note on each.
 - Open as a left-hand drawer that pushes the app aside, so the page stays visible and clickable.
 - Pick elements inside open dialogs, popovers and menus.
 - Offer launchers that can be dragged to any corner and remember their position.
@@ -70,7 +70,7 @@ When screenshots are on, each element also gets a public screenshot URL the agen
 3. **Assemble.** It builds a plain-text prompt from the page path, element descriptions, screenshot links and your request.
 4. **Hand off.** "Prompt this spot" copies the prompt or opens it in Claude Code. "Send feedback" passes it, with the rest of the report, to your `submitFeedback` function.
 
-The package ships as TypeScript source. It uses React 19, Tailwind CSS classes, shadcn/ui theme tokens, Radix primitives and `html2canvas`. It has no backend: your app supplies the pieces that differ between apps (who may use each tool, where screenshots are stored, where feedback goes) through one provider.
+The package ships as TypeScript source. It uses React 19, Tailwind CSS classes, shadcn/ui theme tokens, Radix primitives and `modern-screenshot`. It has no backend: your app supplies the pieces that differ between apps (who may use each tool, where screenshots are stored, where feedback goes) through one provider.
 
 ## Install
 
@@ -226,7 +226,7 @@ export function PromptThisSpot({ children }: { children: React.ReactNode }) {
 What each part does:
 
 - `data-app-push-root` marks the element the drawers push aside when they open. Keep the two gates outside it so the drawers stay fixed at the left edge.
-- `eligible` decides who sees each tool. A gate renders nothing until it is true, and a user who isn't eligible never downloads the tools' heavy code (`html2canvas`, CodeMirror). The feedback tool also waits for the first click on its launcher, because it's usually shown to every signed-in user.
+- `eligible` decides who sees each tool. A gate renders nothing until it is true, and a user who isn't eligible never downloads the tools' heavy code (the screenshot renderer, CodeMirror). The feedback tool also waits for the first click on its launcher, because it's usually shown to every signed-in user.
 - Only mount the gates you want. An app that only wants "Send feedback" can leave out `InspectPromptToolGate` and `uploadPromptScreenshot`.
 - `repoSlug` is the GitHub repository the "Send to Claude Code" buttons open.
 
@@ -310,7 +310,7 @@ Screenshot URLs are public, so anyone with a link can open the image. If your ap
 | No launcher appears | Check that `eligible` is true for the signed-in user. The "Prompt this spot" launcher can also be switched off through its `enabled` preference, which is stored in `localStorage`; read or reset it with `useInspectPromptPreferences()`. |
 | The feedback launcher is missing in Playwright or Cypress | Automated browsers don't see it unless the `sessionStorage` key in `feedbackE2eOptInStorageKey` is `"1"` (see [Configuration](#configuration)). |
 | Screenshots fail with an error on the row | The message comes from your upload route's `{ error }` response. Check the route's auth check and storage credentials. |
-| A screenshot shows the wrong colors | Some CSS color functions don't render in `html2canvas`. The package converts the common ones; layout and text are always reliable. |
+| An image or logo is blank in a screenshot | The image is served from another origin without CORS headers, so the browser won't let it be copied into the screenshot. Allow your app's origin on that storage bucket or CDN. |
 | "Send to Claude Code" opens without a repository selected | Set `repoSlug` in the config. |
 
 ## Configuration
@@ -375,7 +375,7 @@ Only if you let them. Each tool has an `eligible` flag, so you can show "Prompt 
 
 ### How are screenshots taken?
 
-In the browser with `html2canvas`, so no extension or screen-recording permission is needed. Layout and text are accurate; some effects (CSS masks, backdrop filters, animations) may render differently from the live page, and the prompt tells the agent to trust the DOM details over pixel-level styling.
+In the browser, with no extension or screen-recording permission. The package copies the page with every computed style inlined into an SVG `<foreignObject>` and has the browser draw it, so fonts, shadows, `object-fit`, gradients, truncated text and modern color functions look the way they do on screen. Sticky headers, fixed bars and scrolled panels are drawn where the user sees them. Embedded frames and images served from another origin without CORS headers come out blank, and the prompt tells the agent so.
 
 ### Is it on npm?
 
