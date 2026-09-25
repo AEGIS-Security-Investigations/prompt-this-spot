@@ -28,9 +28,13 @@ export const UNSUPPORTED_COLOR_FUNCTIONS = [
   "color",
 ] as const;
 
-/** CSS identifiers may contain these, so a match must not start mid-word. */
-const isIdentifierChar = (character: string): boolean =>
-  /[A-Za-z0-9_-]/.test(character);
+/**
+ * CSS identifiers may contain these, so a match must not start mid-word. An
+ * out-of-range index (`undefined`) is not an identifier character: it means the
+ * match sits at the very start of the value.
+ */
+const isIdentifierChar = (character: string | undefined): boolean =>
+  character !== undefined && /[A-Za-z0-9_-]/.test(character);
 
 /** Cheap pre-check so untouched values skip the scanner entirely. */
 export const hasUnsupportedColorFunction = (value: string): boolean =>

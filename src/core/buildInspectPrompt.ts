@@ -203,8 +203,8 @@ export const buildMultiInspectPrompt = ({
     return ["In our app, here is what I'm looking at:", ...trailer].join("\n");
   }
 
-  if (descriptions.length === 1) {
-    const [only] = descriptions;
+  const [only] = descriptions;
+  if (descriptions.length === 1 && only) {
     return [
       `In our app on the page "${only.pathname}", I'm pointing at this element:`,
       "",

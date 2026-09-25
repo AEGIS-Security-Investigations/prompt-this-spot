@@ -61,7 +61,14 @@ export const createColorConverter = (): ((color: string) => string | null) => {
       context.fillStyle = "#000000";
       context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
-      const [red, green, blue, alpha] = context.getImageData(0, 0, 1, 1).data;
+      // A 1x1 RGBA read always yields four bytes; the fallbacks only satisfy
+      // `noUncheckedIndexedAccess`.
+      const [red = 0, green = 0, blue = 0, alpha = 255] = context.getImageData(
+        0,
+        0,
+        1,
+        1
+      ).data;
       resolved = `rgba(${red}, ${green}, ${blue}, ${Number(
         (alpha / 255).toFixed(3)
       )})`;
