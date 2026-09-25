@@ -123,7 +123,7 @@ The package never talks to storage or a database itself. You provide:
 
 | Adapter | Receives | Must return |
 |---|---|---|
-| `uploadPromptScreenshot`, `uploadFeedbackScreenshot` | a PNG `data:` URL | `{ url, expiresAt }`, where `url` is publicly readable (an AI agent opens it from the prompt) |
+| `uploadPromptScreenshot`, `uploadFeedbackScreenshot` | a PNG `data:` URL | `{ url, expiresAt? }`, where `url` is publicly readable (an AI agent opens it from the prompt) and `expiresAt` is an ISO date, or null if the image is kept |
 | `submitFeedback` | a `UserFeedbackSubmission` (message, category, pathname, assembled prompt, selections, screenshots, viewport) | nothing; throw an `Error` to show its message in the drawer |
 
 `createScreenshotUploader(path)` covers the common case: it POSTs `{ dataUrl }` as JSON to your route and returns the JSON response. Your route should check that the caller is allowed, decode the PNG, store it in public object storage (S3, Vercel Blob, and so on), and respond with `{ url, expiresAt }`. On an error it should return `{ error }` with a non-2xx status.

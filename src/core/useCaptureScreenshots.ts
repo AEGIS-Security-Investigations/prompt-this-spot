@@ -62,7 +62,7 @@ export const useCaptureScreenshots = (
           const uploaded = await upload(dataUrl);
           patch(id, {
             url: uploaded.url,
-            expiresAt: uploaded.expiresAt,
+            expiresAt: uploaded.expiresAt ?? null,
             status: "ready",
             error: null,
             // Drop the base64 payload now that the image is hosted. A 2000px

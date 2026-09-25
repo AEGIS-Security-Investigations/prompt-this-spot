@@ -88,9 +88,11 @@ export interface InspectPromptScreenshot {
  * admin inspector uploads seven-day review scratch, the feedback widget uploads
  * images that have to outlive an admin's triage queue.
  */
-export type CaptureScreenshotUploader = (
-  dataUrl: string
-) => Promise<{ url: string; expiresAt: string }>;
+export type CaptureScreenshotUploader = (dataUrl: string) => Promise<{
+  url: string;
+  /** When the stored image is deleted; omit or null if it never expires. */
+  expiresAt?: string | null;
+}>;
 
 export interface InspectPromptScreenshots {
   screenshots: InspectPromptScreenshot[];
