@@ -11,6 +11,13 @@
 @import "tailwindcss/utilities.css" source(none);
 @import "tw-animate-css";
 @source "../src";
+/*
+ * Words the capture code uses as CSS values (display types, style property
+ * names), not as class names. Tailwind would otherwise emit them as global
+ * utilities like `.contents` and `.filter`, which could restyle an app element
+ * that happens to use the same class name.
+ */
+@source not inline("contents filter flow-root isolate list-item table-cell");
 
 @custom-variant dark (&:where(.dark, .dark *));
 
