@@ -118,6 +118,25 @@ const noteLine = (screenshot: InspectPromptScreenshot): string[] => {
   return trimmed.length > 0 ? [`  Note: ${trimmed}`] : [];
 };
 
+/**
+ * Says the image carries the user's own markup, so the agent reads the arrows
+ * and boxes as "this is what I mean" rather than as part of the app. Labels
+ * are repeated as text in case the image fails to load.
+ */
+const markupLine = (screenshot: InspectPromptScreenshot): string[] => {
+  const marks = screenshot.annotations ?? [];
+  if (marks.length === 0) {
+    return [];
+  }
+  const labels = marks.flatMap((mark) =>
+    mark.tool === "text" ? [`"${mark.text}"`] : []
+  );
+  return [
+    "  Marked up: the user drew on this screenshot to show what they mean; the markup is not part of the app." +
+      (labels.length > 0 ? ` Labels they wrote: ${labels.join(", ")}.` : ""),
+  ];
+};
+
 /** The element shot belonging to one selection, if it uploaded successfully. */
 const elementScreenshotLine = (
   description: ElementDescription,
@@ -132,6 +151,7 @@ const elementScreenshotLine = (
   }
   return [
     `- Screenshot (this element, with surrounding page for context): ${shot.url}`,
+    ...markupLine(shot),
     ...noteLine(shot),
   ];
 };
@@ -153,6 +173,7 @@ const pageScreenshotLines = (
       : `Full-page screenshots (${pageShots.length}):`,
     ...pageShots.flatMap((shot) => [
       `- ${shot.pathname}: ${shot.url}`,
+      ...markupLine(shot),
       ...noteLine(shot),
     ]),
   ];

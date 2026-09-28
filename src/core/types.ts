@@ -1,3 +1,5 @@
+import type { ScreenshotAnnotation } from "../annotate/annotationTypes";
+
 /**
  * Shared types for the "Prompt this spot" inspect tool. Kept framework-free so
  * the prompt builder and the controller hook can both depend on them without a
@@ -77,6 +79,12 @@ export interface InspectPromptScreenshot {
    * instead of one shared request having to cover them all.
    */
   note: string;
+  /**
+   * Arrows, boxes, lines and text the reviewer drew on the shot. When present,
+   * `url` points at the marked-up image. Kept as shapes, not only pixels, so
+   * reopening the editor can undo or change them.
+   */
+  annotations?: ScreenshotAnnotation[];
 }
 
 /**
@@ -112,6 +120,14 @@ export interface InspectPromptScreenshots {
   retryScreenshot: (id: string) => void;
   /** Set the reviewer's per-shot note, which travels into the prompt. */
   setScreenshotNote: (id: string, note: string) => void;
+  /** The shot's clean capture (no markup) as a data URL, while it is held. */
+  getScreenshotSource: (id: string) => string | undefined;
+  /** Save markup on a shot and upload the marked-up image in its place. */
+  annotateScreenshot: (
+    id: string,
+    annotations: ScreenshotAnnotation[],
+    dataUrl: string
+  ) => void;
   removeScreenshot: (id: string) => void;
   /** Drop the element shot(s) belonging to a removed selection. */
   removeScreenshotsForSelection: (selectionId: string) => void;

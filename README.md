@@ -40,6 +40,7 @@ Both tools also:
 
 - Select several elements at once, even across page navigations, and describe them in one numbered prompt.
 - Capture element and full-page screenshots in the browser with `modern-screenshot`, with an optional note on each.
+- Mark up any screenshot with arrows, boxes, freehand lines and text labels before sending it. The marked-up image replaces the plain one, and the prompt tells the agent the markup is the user's, not part of the app.
 - Open as a left-hand drawer that pushes the app aside, so the page stays visible and clickable.
 - Pick elements inside open dialogs, popovers and menus.
 - Offer launchers that can be dragged to any corner and remember their position.
@@ -376,6 +377,10 @@ Only if you let them. Each tool has an `eligible` flag, so you can show "Prompt 
 ### How are screenshots taken?
 
 In the browser, with no extension or screen-recording permission. The package copies the page with every computed style inlined into an SVG `<foreignObject>` and has the browser draw it, so fonts, shadows, `object-fit`, gradients, truncated text and modern color functions look the way they do on screen. Sticky headers, fixed bars and scrolled panels are drawn where the user sees them. Embedded frames and images served from another origin without CORS headers come out blank, and the prompt tells the agent so.
+
+### Can users draw on a screenshot?
+
+Yes. Each uploaded screenshot has a **Mark up** button that opens an editor with arrow, box, freehand and text tools in four colors, plus undo and clear. It works with a mouse, a finger or a stylus. Saving uploads the marked-up image through the same uploader in place of the plain one. The original capture stays in memory, so reopening the editor lets the user change or remove earlier marks instead of drawing over them. The earlier, unmarked upload is not deleted; it expires under your normal retention.
 
 ### Is it on npm?
 

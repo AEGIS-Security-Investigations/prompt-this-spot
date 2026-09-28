@@ -1,14 +1,24 @@
 "use client";
 
 import { AlertTriangle, Camera, Loader2, RotateCw, Trash2 } from "lucide-react";
+import {
+  ScreenshotAnnotator,
+  type ScreenshotAnnotatorClasses,
+} from "../annotate/ScreenshotAnnotator";
 import type { InspectPromptScreenshot } from "../core/types";
 import { cn } from "../lib/cn";
 import { InspectPromptScreenshotPreview } from "./InspectPromptScreenshotPreview";
 import {
+  inspectPromptHint,
   inspectPromptPanel,
+  inspectPromptPrimaryAction,
+  inspectPromptRawModalClose,
+  inspectPromptRawModalOverlay,
+  inspectPromptRawModalTitle,
   inspectPromptRemoveButton,
   inspectPromptRetryButton,
   inspectPromptScreenshotNoteInput,
+  inspectPromptScreenshotPreviewContent,
   inspectPromptSelectionSelector,
   inspectPromptSelectionTitle,
 } from "./inspectPromptChromeClasses";
@@ -20,6 +30,16 @@ interface InspectPromptScreenshotRowProps {
   onNoteChange: (id: string, note: string) => void;
 }
 
+const annotatorClasses: ScreenshotAnnotatorClasses = {
+  trigger: inspectPromptRetryButton,
+  overlay: inspectPromptRawModalOverlay,
+  content: inspectPromptScreenshotPreviewContent,
+  title: inspectPromptRawModalTitle,
+  description: cn(inspectPromptHint, "font-mono"),
+  close: inspectPromptRawModalClose,
+  primaryAction: inspectPromptPrimaryAction,
+};
+
 /** One line of status text per shot, in plain English. */
 const statusLabel = (screenshot: InspectPromptScreenshot): string => {
   switch (screenshot.status) {
@@ -29,10 +49,15 @@ const statusLabel = (screenshot: InspectPromptScreenshot): string => {
       return "Uploading…";
     case "failed":
       return screenshot.error ?? "Failed";
-    default:
-      return screenshot.kind === "element"
-        ? "Element + surrounding context"
-        : "Full page";
+    default: {
+      const framing =
+        screenshot.kind === "element"
+          ? "Element + surrounding context"
+          : "Full page";
+      return screenshot.annotations?.length
+        ? `${framing} · marked up`
+        : framing;
+    }
   }
 };
 
@@ -103,6 +128,13 @@ export const InspectPromptScreenshotRow = ({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
+          <ScreenshotAnnotator
+            screenshot={screenshot}
+            classes={annotatorClasses}
+            testIdPrefix="inspect-prompt"
+            title={`Mark up · ${screenshot.label}`}
+            description="Draw arrows, boxes or text. The agent gets the marked-up image."
+          />
           {screenshot.status === "failed" ? (
             // Retry re-runs the ORIGINAL capture, not a page reload — reloading
             // would lose every selection and screenshot so far.

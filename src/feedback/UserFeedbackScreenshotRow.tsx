@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Camera, RotateCw, Trash2 } from "lucide-react";
+import { ScreenshotAnnotator } from "../annotate/ScreenshotAnnotator";
 import type { InspectPromptScreenshot } from "../core/types";
 import { cn } from "../lib/cn";
 import { Spinner } from "../ui/spinner";
@@ -22,10 +23,13 @@ const statusLabel = (screenshot: InspectPromptScreenshot): string => {
       return "Attaching…";
     case "failed":
       return screenshot.error ?? "Screenshot failed";
-    default:
-      return screenshot.kind === "element"
-        ? "The spot, with the page around it"
-        : "The whole page";
+    default: {
+      const framing =
+        screenshot.kind === "element"
+          ? "The spot, with the page around it"
+          : "The whole page";
+      return screenshot.annotations?.length ? `${framing}, marked up` : framing;
+    }
   }
 };
 
@@ -61,7 +65,13 @@ export const UserFeedbackScreenshotRow = ({
   onRetry,
 }: UserFeedbackScreenshotRowProps) => {
   const {
+    userFeedbackHint,
     userFeedbackPanel,
+    userFeedbackPreviewClose,
+    userFeedbackPreviewContent,
+    userFeedbackPreviewOverlay,
+    userFeedbackPreviewTitle,
+    userFeedbackPrimaryAction,
     userFeedbackSectionDivider,
     userFeedbackRemoveButton,
     userFeedbackRetryButton,
@@ -112,6 +122,21 @@ export const UserFeedbackScreenshotRow = ({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
+          <ScreenshotAnnotator
+            screenshot={screenshot}
+            classes={{
+              trigger: userFeedbackRetryButton,
+              overlay: userFeedbackPreviewOverlay,
+              content: userFeedbackPreviewContent,
+              title: userFeedbackPreviewTitle,
+              description: userFeedbackHint,
+              close: userFeedbackPreviewClose,
+              primaryAction: userFeedbackPrimaryAction,
+            }}
+            testIdPrefix="user-feedback"
+            title="Mark up your screenshot"
+            description="Draw an arrow, a box or a note to show exactly what you mean."
+          />
           {/*
             Retry re-runs the shot's ORIGINAL capture, framed on the region it
             was taken for — re-deriving it now could photograph something else

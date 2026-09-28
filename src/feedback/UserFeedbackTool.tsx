@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { ScreenshotAnnotationProvider } from "../annotate/ScreenshotAnnotationContext";
 import { usePromptThisSpotConfig } from "../config/PromptThisSpotConfig";
 import { bindAppPushLayout } from "../core/bindAppPushLayout";
 import { getAppPushRoot } from "../core/getAppPushRoot";
@@ -59,6 +60,8 @@ export const UserFeedbackTool = () => {
     removeSelection,
     removeScreenshot,
     retryScreenshot,
+    getScreenshotSource,
+    annotateScreenshot,
     capturePageScreenshot,
     clearAll,
     setHoverRect,
@@ -70,6 +73,11 @@ export const UserFeedbackTool = () => {
     // attach, so it is never opt-out.
     screenshotsEnabled: true,
   });
+
+  const annotationApi = useMemo(
+    () => ({ getSource: getScreenshotSource, annotate: annotateScreenshot }),
+    [annotateScreenshot, getScreenshotSource]
+  );
 
   // This component is only mounted once the user has clicked the launcher (the
   // gate defers its chunk until then), so the drawer should already be open by
@@ -154,27 +162,29 @@ export const UserFeedbackTool = () => {
         />
       ) : null}
 
-      <UserFeedbackDrawer
-        open={drawerOpen}
-        pickMode={pickMode}
-        capturing={capturing}
-        message={message}
-        category={category}
-        selections={selections}
-        screenshots={screenshots}
-        submitting={submitting}
-        error={error}
-        onMessageChange={setMessage}
-        onCategoryChange={setCategory}
-        onTogglePick={togglePickMode}
-        onCapturePage={capturePageScreenshot}
-        onRemoveSelection={removeSelection}
-        onClearSelections={clearAll}
-        onRemoveScreenshot={removeScreenshot}
-        onRetryScreenshot={retryScreenshot}
-        onSubmit={submit}
-        onClose={closeDrawer}
-      />
+      <ScreenshotAnnotationProvider value={annotationApi}>
+        <UserFeedbackDrawer
+          open={drawerOpen}
+          pickMode={pickMode}
+          capturing={capturing}
+          message={message}
+          category={category}
+          selections={selections}
+          screenshots={screenshots}
+          submitting={submitting}
+          error={error}
+          onMessageChange={setMessage}
+          onCategoryChange={setCategory}
+          onTogglePick={togglePickMode}
+          onCapturePage={capturePageScreenshot}
+          onRemoveSelection={removeSelection}
+          onClearSelections={clearAll}
+          onRemoveScreenshot={removeScreenshot}
+          onRetryScreenshot={retryScreenshot}
+          onSubmit={submit}
+          onClose={closeDrawer}
+        />
+      </ScreenshotAnnotationProvider>
     </>,
     document.documentElement
   );
