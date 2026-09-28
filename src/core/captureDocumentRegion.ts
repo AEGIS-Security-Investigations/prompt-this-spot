@@ -3,6 +3,7 @@
 import { createContext, destroyContext, domToPng } from "modern-screenshot";
 import { createOffscreenPruner } from "./createOffscreenPruner";
 import { computeCaptureScale } from "./inspectCaptureRect";
+import { loadDeferredImages } from "./loadDeferredImages";
 import { pinScrollAnchoredElements } from "./pinScrollAnchoredElements";
 import { resolveCaptureRoot } from "./resolveCaptureRoot";
 import type { InspectCaptureRect } from "./types";
@@ -146,6 +147,9 @@ export const captureDocumentRegion = async (
   const isDocument = root.element === document.documentElement;
   const pins = pinScrollAnchoredElements(document, isInsideIgnored, root);
   const isOnscreen = createOffscreenPruner(rect, root.element, root.overlays);
+  // Otherwise a lazy image that never loads, such as one inside a
+  // `display: none` box, holds the capture for the whole timeout.
+  const restoreLazyImages = loadDeferredImages(root.element);
 
   try {
     const context = await createContext(root.element, {
@@ -199,6 +203,7 @@ export const captureDocumentRegion = async (
       destroyContext(context);
     }
   } finally {
+    restoreLazyImages();
     pins.release();
   }
 };
