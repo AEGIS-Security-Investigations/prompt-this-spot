@@ -341,6 +341,46 @@ describe("buildMultiInspectPrompt screenshots", () => {
     ...overrides,
   });
 
+  it("says a marked-up shot carries the user's own markup, with its labels", () => {
+    const prompt = buildMultiInspectPrompt({
+      descriptions: [],
+      request: "Fix the spacing",
+      screenshots: [
+        shot({
+          annotations: [
+            {
+              id: "m1",
+              tool: "arrow",
+              color: "#ef4444",
+              from: { x: 0, y: 0 },
+              to: { x: 10, y: 10 },
+            },
+            {
+              id: "m2",
+              tool: "text",
+              color: "#ef4444",
+              at: { x: 5, y: 5 },
+              text: "too wide",
+            },
+          ],
+        }),
+      ],
+    });
+
+    expect(prompt).toContain(
+      '  Marked up: the user drew on this screenshot to show what they mean; the markup is not part of the app. Labels they wrote: "too wide".'
+    );
+  });
+
+  it("says nothing about markup on a plain shot", () => {
+    const prompt = buildMultiInspectPrompt({
+      descriptions: [],
+      request: "",
+      screenshots: [shot({ annotations: [] })],
+    });
+    expect(prompt).not.toContain("Marked up");
+  });
+
   it("attaches an element screenshot to the selection it shows", () => {
     const description = describe1(`<button data-testid="cta">Go</button>`);
     const prompt = buildMultiInspectPrompt({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import type { ScreenshotAnnotation } from "../annotate/annotationTypes";
 import { usePromptThisSpotConfig } from "../config/PromptThisSpotConfig";
 import { captureDocumentRegion } from "./captureDocumentRegion";
 import { makeInspectPromptId } from "./makeInspectPromptId";
@@ -39,6 +40,13 @@ export const useCaptureScreenshots = (
    * re-deriving it on retry would silently photograph the wrong thing.
    */
   const capturesRef = useRef(new Map<string, () => Promise<string>>());
+  /**
+   * Each shot's clean capture, kept after upload so markup can be redrawn on
+   * the original rather than stacked on an already-marked image. A ref, not
+   * state: nothing renders from it, and megabytes of base64 in state would be
+   * copied on every patch.
+   */
+  const sourcesRef = useRef(new Map<string, string>());
 
   const patch = useCallback(
     (id: string, changes: Partial<InspectPromptScreenshot>) => {
@@ -89,9 +97,14 @@ export const useCaptureScreenshots = (
       capture: () => Promise<string>
     ) => {
       const id = makeInspectPromptId("shot");
+      const captureAndKeep = async () => {
+        const dataUrl = await capture();
+        sourcesRef.current.set(id, dataUrl);
+        return dataUrl;
+      };
       setScreenshots((prev) => [...prev, { ...draft, id }]);
-      capturesRef.current.set(id, capture);
-      run(id, capture);
+      capturesRef.current.set(id, captureAndKeep);
+      run(id, captureAndKeep);
     },
     [run]
   );
@@ -168,8 +181,34 @@ export const useCaptureScreenshots = (
     [patch]
   );
 
+  const getScreenshotSource = useCallback(
+    (id: string) => sourcesRef.current.get(id),
+    []
+  );
+
+  const annotateScreenshot = useCallback(
+    (id: string, annotations: ScreenshotAnnotation[], dataUrl: string) => {
+      // From here a retry re-uploads this marked-up image; re-capturing the
+      // page would silently throw the markup away.
+      const upload = () => Promise.resolve(dataUrl);
+      capturesRef.current.set(id, upload);
+      // Out of "ready" until the new image is hosted, so neither the prompt
+      // nor a feedback submit can cite the old, un-marked URL meanwhile.
+      patch(id, {
+        annotations,
+        url: null,
+        expiresAt: null,
+        status: "uploading",
+        error: null,
+      });
+      run(id, upload);
+    },
+    [patch, run]
+  );
+
   const removeScreenshot = useCallback((id: string) => {
     capturesRef.current.delete(id);
+    sourcesRef.current.delete(id);
     setScreenshots((prev) => prev.filter((shot) => shot.id !== id));
   }, []);
 
@@ -180,6 +219,7 @@ export const useCaptureScreenshots = (
           return true;
         }
         capturesRef.current.delete(shot.id);
+        sourcesRef.current.delete(shot.id);
         return false;
       })
     );
@@ -187,6 +227,7 @@ export const useCaptureScreenshots = (
 
   const clearScreenshots = useCallback(() => {
     capturesRef.current.clear();
+    sourcesRef.current.clear();
     setScreenshots([]);
   }, []);
 
@@ -198,6 +239,8 @@ export const useCaptureScreenshots = (
       captureElement,
       retryScreenshot,
       setScreenshotNote,
+      getScreenshotSource,
+      annotateScreenshot,
       removeScreenshot,
       removeScreenshotsForSelection,
       clearScreenshots,
@@ -209,6 +252,8 @@ export const useCaptureScreenshots = (
       captureElement,
       retryScreenshot,
       setScreenshotNote,
+      getScreenshotSource,
+      annotateScreenshot,
       removeScreenshot,
       removeScreenshotsForSelection,
       clearScreenshots,

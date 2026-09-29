@@ -6,6 +6,7 @@ import type {
   CaptureScreenshotUploader,
   ElementDescription,
   InspectPromptScreenshot,
+  InspectPromptScreenshots,
 } from "./types";
 import { useCaptureScreenshots } from "./useCaptureScreenshots";
 
@@ -48,6 +49,10 @@ export interface InspectPromptController {
   retryScreenshot: (id: string) => void;
   /** Set the reviewer's per-shot note, which travels into the prompt. */
   setScreenshotNote: (id: string, note: string) => void;
+  /** A shot's clean capture, for the markup editor to draw on. */
+  getScreenshotSource: InspectPromptScreenshots["getScreenshotSource"];
+  /** Save markup on a shot and upload the marked-up image in its place. */
+  annotateScreenshot: InspectPromptScreenshots["annotateScreenshot"];
   removeScreenshot: (id: string) => void;
   setRequest: (value: string) => void;
   setHoverRect: (rect: DOMRect | null) => void;
@@ -84,6 +89,8 @@ export const useCaptureController = ({
     captureElement,
     retryScreenshot,
     setScreenshotNote,
+    getScreenshotSource,
+    annotateScreenshot,
     removeScreenshot,
     removeScreenshotsForSelection,
     clearScreenshots,
@@ -201,6 +208,8 @@ export const useCaptureController = ({
       capturePageScreenshot: capturePage,
       retryScreenshot,
       setScreenshotNote,
+      getScreenshotSource,
+      annotateScreenshot,
       removeScreenshot,
       setRequest,
       setHoverRect,
@@ -224,6 +233,8 @@ export const useCaptureController = ({
       capturePage,
       retryScreenshot,
       setScreenshotNote,
+      getScreenshotSource,
+      annotateScreenshot,
       removeScreenshot,
     ]
   );

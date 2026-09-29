@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { ScreenshotAnnotationProvider } from "../annotate/ScreenshotAnnotationContext";
 import { usePromptThisSpotConfig } from "../config/PromptThisSpotConfig";
 import { bindAppPushLayout } from "../core/bindAppPushLayout";
 import { getAppPushRoot } from "../core/getAppPushRoot";
@@ -64,6 +65,8 @@ export const InspectPromptTool = ({ eligible }: { eligible: boolean }) => {
     removeSelection,
     removeScreenshot,
     retryScreenshot,
+    getScreenshotSource,
+    annotateScreenshot,
     setScreenshotNote,
     capturePageScreenshot,
     clearAll,
@@ -73,6 +76,11 @@ export const InspectPromptTool = ({ eligible }: { eligible: boolean }) => {
     upload: uploadPromptScreenshot,
     screenshotsEnabled,
   });
+
+  const annotationApi = useMemo(
+    () => ({ getSource: getScreenshotSource, annotate: annotateScreenshot }),
+    [annotateScreenshot, getScreenshotSource]
+  );
 
   useInspectPromptShortcut(canUse, drawerOpen, openDrawer, closeDrawer);
 
@@ -141,24 +149,26 @@ export const InspectPromptTool = ({ eligible }: { eligible: boolean }) => {
         <InspectPromptLauncher onOpen={openDrawer} />
       ) : null}
 
-      <InspectPromptDrawer
-        open={drawerOpen}
-        pickMode={pickMode}
-        selections={selections}
-        screenshots={screenshots}
-        capturing={capturing}
-        request={request}
-        onTogglePick={togglePickMode}
-        onStopPick={stopPickMode}
-        onRemove={removeSelection}
-        onRemoveScreenshot={removeScreenshot}
-        onRetryScreenshot={retryScreenshot}
-        onScreenshotNoteChange={setScreenshotNote}
-        onCapturePage={capturePageScreenshot}
-        onClear={clearAll}
-        onRequestChange={setRequest}
-        onClose={closeDrawer}
-      />
+      <ScreenshotAnnotationProvider value={annotationApi}>
+        <InspectPromptDrawer
+          open={drawerOpen}
+          pickMode={pickMode}
+          selections={selections}
+          screenshots={screenshots}
+          capturing={capturing}
+          request={request}
+          onTogglePick={togglePickMode}
+          onStopPick={stopPickMode}
+          onRemove={removeSelection}
+          onRemoveScreenshot={removeScreenshot}
+          onRetryScreenshot={retryScreenshot}
+          onScreenshotNoteChange={setScreenshotNote}
+          onCapturePage={capturePageScreenshot}
+          onClear={clearAll}
+          onRequestChange={setRequest}
+          onClose={closeDrawer}
+        />
+      </ScreenshotAnnotationProvider>
     </>,
     document.documentElement
   );

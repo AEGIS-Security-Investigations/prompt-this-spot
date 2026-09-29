@@ -197,6 +197,71 @@ describe("useCaptureController", () => {
     );
   });
 
+  it("uploads a marked-up image in place and keeps the clean capture", async () => {
+    const { result } = renderController();
+    await act(async () => result.current.capturePageScreenshot());
+    const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
+
+    // The clean capture stays available so markup is redrawn on the original,
+    // never stacked on an already-marked image.
+    expect(result.current.getScreenshotSource(id)).toBe(
+      "data:image/png;base64,stub"
+    );
+
+    upload.mockImplementationOnce(async () => ({
+      url: "https://cdn.example.com/marked.png",
+      expiresAt: "2026-08-13T00:00:00.000Z",
+    }));
+    const marks = [
+      {
+        id: "m1",
+        tool: "box" as const,
+        color: "#ef4444",
+        from: { x: 0, y: 0 },
+        to: { x: 40, y: 40 },
+      },
+    ];
+    await act(async () =>
+      result.current.annotateScreenshot(
+        id,
+        marks,
+        "data:image/png;base64,marked"
+      )
+    );
+
+    expect(upload).toHaveBeenLastCalledWith("data:image/png;base64,marked");
+    expect(result.current.screenshots).toHaveLength(1);
+    expect(result.current.screenshots[0]?.status).toBe("ready");
+    expect(result.current.screenshots[0]?.url).toBe(
+      "https://cdn.example.com/marked.png"
+    );
+    expect(result.current.screenshots[0]?.annotations).toEqual(marks);
+    expect(result.current.getScreenshotSource(id)).toBe(
+      "data:image/png;base64,stub"
+    );
+  });
+
+  it("retries a failed markup upload with the marked-up image, not a re-capture", async () => {
+    const { result } = renderController();
+    await act(async () => result.current.capturePageScreenshot());
+    const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
+    const capturesBefore = captureDocumentRegion.mock.calls.length;
+
+    upload.mockImplementationOnce(async () => {
+      throw new Error("network down");
+    });
+    await act(async () =>
+      result.current.annotateScreenshot(id, [], "data:image/png;base64,marked")
+    );
+    expect(result.current.screenshots[0]?.status).toBe("failed");
+
+    await act(async () => result.current.retryScreenshot(id));
+
+    expect(result.current.screenshots[0]?.status).toBe("ready");
+    expect(upload).toHaveBeenLastCalledWith("data:image/png;base64,marked");
+    expect(captureDocumentRegion.mock.calls.length).toBe(capturesBefore);
+  });
+
   it("forgets a removed screenshot's capture so retry cannot resurrect it", async () => {
     const { result } = renderController();
     await act(async () => result.current.capturePageScreenshot());

@@ -8,6 +8,15 @@
  */
 
 // Setup
+export type {
+  AnnotationPoint,
+  AnnotationTool,
+  ArrowAnnotation,
+  BoxAnnotation,
+  PenAnnotation,
+  ScreenshotAnnotation,
+  TextAnnotation,
+} from "./annotate/annotationTypes";
 export * from "./config/PromptThisSpotConfig";
 export * from "./core/buildInspectPrompt";
 export * from "./core/getAppPushRoot";
