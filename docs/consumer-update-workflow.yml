@@ -96,8 +96,13 @@ jobs:
                 echo "::error::Could not read the latest $PACKAGE version from npm."
                 exit 1
               fi
-              if [ "$latest" != "$current" ] && \
-                [ "$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -n1)" != "$latest" ]; then
+              # SemVer precedence, not sort -V: 1.0.0-alpha comes before 1.0.0.
+              if ! order="$(CURRENT="$current" LATEST="$latest" \
+                bun -e 'console.log(Bun.semver.order(process.env.LATEST, process.env.CURRENT))')"; then
+                echo "::error::Could not compare $PACKAGE versions \"$current\" and \"$latest\" as SemVer."
+                exit 1
+              fi
+              if [ "$order" = "-1" ]; then
                 echo "$PACKAGE $current is newer than npm latest $latest; leaving it alone."
                 latest="$current"
               fi
