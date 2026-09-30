@@ -1,7 +1,9 @@
 name: Notify consumer apps
 
-# After a change lands on main, ask each app that depends on this package to run
-# its "Update prompt-this-spot" workflow now instead of waiting for its schedule.
+# After a change lands on main (apps pinned to a commit) or a version is
+# published to npm (apps on a version; publish.yml calls this), ask each app
+# that depends on this package to run its "Update prompt-this-spot" workflow now
+# instead of waiting for its schedule.
 # Needs a CONSUMER_DISPATCH_TOKEN secret that can send repository_dispatch
 # events to the repositories below; without it this job does nothing and the
 # apps still pick the change up on their own schedule.
@@ -11,7 +13,9 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "styles/**"
       - "package.json"
+  workflow_call:
   workflow_dispatch:
 
 permissions:

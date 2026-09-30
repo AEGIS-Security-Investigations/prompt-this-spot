@@ -23,5 +23,11 @@ of them.
 - Apps compile the TypeScript source with their own settings, so the source
   must pass under strict flags such as `noUncheckedIndexedAccess`.
 - A new export that apps need goes in `src/index.ts`.
+- Once publishing to npm is on (`NPM_PUBLISH`), a change to what the package
+  ships (`src`, the prebuilt stylesheet, dependencies) raises `version` in
+  `package.json`; CI fails otherwise. Never downgrade it.
+- Never point an app at a commit that isn't on `main`. Branch commits vanish
+  when the branch is deleted, and the apps' update workflow refuses to move
+  such a pin.
 - Adding a peer dependency, or raising one's minimum version, is a breaking
   change for every app: call it out in the PR.

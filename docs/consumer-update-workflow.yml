@@ -1,11 +1,19 @@
 # Copy into an app's .github/workflows/ to keep its prompt-this-spot dependency
-# on the newest commit of this repository's main branch.
+# up to date.
 #
-# The app must depend on the package by commit:
+# It follows whichever way the app depends on the package:
+#   "prompt-this-spot": "1.2.3"   -> the newest version published to npm
 #   "prompt-this-spot": "github:AEGIS-Security-Investigations/prompt-this-spot#<sha>"
+#                                 -> the newest commit on main
 #
-# When main has moved, this updates package.json and the lockfile and opens (or
-# refreshes) one pull request listing the commits it brings in.
+# It only ever moves the dependency forward. If the app is pinned to a commit
+# that is not on main (a feature-branch commit), or to a version newer than npm
+# "latest", the workflow leaves the pin alone; for a commit it fails so the
+# pin gets fixed, because a branch commit can disappear when the branch is
+# deleted and every install of it then breaks.
+#
+# When there is something newer, this updates package.json and the lockfile and
+# opens (or refreshes) one pull request listing the changes it brings in.
 #
 # Pull requests opened with the default GITHUB_TOKEN do not start other
 # workflows, so the app's CI will not run on them by itself. Set a
@@ -36,32 +44,89 @@ jobs:
     env:
       PACKAGE: prompt-this-spot
       SOURCE_REPO: AEGIS-Security-Investigations/prompt-this-spot
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: Find the newest commit
+      - name: Find the newest version
         id: versions
         run: |
-          latest="$(git ls-remote "https://github.com/$SOURCE_REPO" refs/heads/main | cut -f1)"
-          current="$(jq -r --arg p "$PACKAGE" '.dependencies[$p] // .devDependencies[$p] // ""' package.json | sed -n 's/.*#//p')"
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          echo "current=$current" >> "$GITHUB_OUTPUT"
-          if [ -z "$latest" ] || [ "$latest" = "$current" ]; then
+          spec="$(jq -r --arg p "$PACKAGE" '.dependencies[$p] // .devDependencies[$p] // ""' package.json)"
+          if [ -z "$spec" ]; then
+            echo "::error::$PACKAGE is not in package.json."
+            exit 1
+          fi
+          api() {
+            curl -sS --fail-with-body -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$SOURCE_REPO/$1"
+          }
+          case "$spec" in
+            github:*)
+              # Pinned to a commit: follow the source repository's main branch.
+              mode=git
+              current="${spec##*#}"
+              latest="$(git ls-remote "https://github.com/$SOURCE_REPO" refs/heads/main | cut -f1)"
+              if [ -z "$latest" ]; then
+                echo "::error::Could not read the main branch of $SOURCE_REPO."
+                exit 1
+              fi
+              if [ "$latest" != "$current" ]; then
+                # Only ever move forward. A pin to a commit that is not on main
+                # (a feature-branch commit) or is ahead of main must not be
+                # replaced with an older main: that silently undoes a fix.
+                if ! compare="$(api "compare/$current...$latest")"; then
+                  echo "::error::$PACKAGE is pinned to $current, which $SOURCE_REPO does not have (a deleted branch?). Installs of that pin will break. Pin a commit on main."
+                  exit 1
+                fi
+                status="$(printf '%s' "$compare" | jq -r '.status')"
+                if [ "$status" != "ahead" ]; then
+                  echo "::error::$PACKAGE is pinned to $current, which is not on $SOURCE_REPO main (compare status: $status). Merge that change to main and pin the merged commit; this workflow will not overwrite the pin."
+                  exit 1
+                fi
+              fi
+              ;;
+            *)
+              # Pinned to a published version: follow the npm "latest" tag.
+              mode=npm
+              current="$(printf '%s' "$spec" | sed 's/^[~^=v]*//')"
+              latest="$(npm view "$PACKAGE" version)"
+              if [ -z "$latest" ]; then
+                echo "::error::Could not read the latest $PACKAGE version from npm."
+                exit 1
+              fi
+              if [ "$latest" != "$current" ] && \
+                [ "$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -n1)" != "$latest" ]; then
+                echo "$PACKAGE $current is newer than npm latest $latest; leaving it alone."
+                latest="$current"
+              fi
+              ;;
+          esac
+          {
+            echo "mode=$mode"
+            echo "latest=$latest"
+            echo "current=$current"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$latest" = "$current" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Already on ${current:-<none>}."
+            echo "Already on $current."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Updating ${current:-<none>} -> $latest."
+            echo "Updating $current -> $latest."
           fi
 
       - name: Update the dependency and lockfile
         if: steps.versions.outputs.changed == 'true'
         env:
+          MODE: ${{ steps.versions.outputs.mode }}
           LATEST: ${{ steps.versions.outputs.latest }}
         run: |
-          spec="github:$SOURCE_REPO#$LATEST"
+          if [ "$MODE" = git ]; then
+            spec="github:$SOURCE_REPO#$LATEST"
+          else
+            spec="$LATEST"
+          fi
           tmp="$(mktemp)"
           jq --indent 2 --arg p "$PACKAGE" --arg v "$spec" \
             'if .dependencies[$p] then .dependencies[$p] = $v else .devDependencies[$p] = $v end' \
@@ -72,16 +137,27 @@ jobs:
       - name: List the incoming changes
         if: steps.versions.outputs.changed == 'true'
         env:
+          MODE: ${{ steps.versions.outputs.mode }}
           CURRENT: ${{ steps.versions.outputs.current }}
           LATEST: ${{ steps.versions.outputs.latest }}
         run: |
+          if [ "$MODE" = git ]; then
+            from="$CURRENT"
+            to="$LATEST"
+            title="[\`${LATEST:0:7}\`](https://github.com/$SOURCE_REPO/commit/$LATEST)"
+          else
+            from="v$CURRENT"
+            to="v$LATEST"
+            title="[\`$LATEST\`](https://github.com/$SOURCE_REPO/releases/tag/v$LATEST)"
+          fi
           {
-            echo "Updates \`$PACKAGE\` to [\`${LATEST:0:7}\`](https://github.com/$SOURCE_REPO/commit/$LATEST)."
+            echo "Updates \`$PACKAGE\` to $title."
             echo
             if [ -n "$CURRENT" ]; then
-              echo "Changes since \`${CURRENT:0:7}\` ([full diff](https://github.com/$SOURCE_REPO/compare/$CURRENT...$LATEST)):"
+              echo "Changes since \`$from\` ([full diff](https://github.com/$SOURCE_REPO/compare/$from...$to)):"
               echo
-              curl -sS "https://api.github.com/repos/$SOURCE_REPO/compare/$CURRENT...$LATEST" \
+              curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+                "https://api.github.com/repos/$SOURCE_REPO/compare/$from...$to" \
                 | jq -r '.commits[]? | "- " + (.commit.message | split("\n")[0]) + " (" + .sha[0:7] + ")"'
             fi
             echo

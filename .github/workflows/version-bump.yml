@@ -1,0 +1,41 @@
+name: Version bump
+
+# Apps install the version published to npm, so a change that ships in the
+# package must raise "version" in package.json or it never reaches them.
+# Enforced once publishing is on (repository variable NPM_PUBLISH = "true").
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: vars.NPM_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Shipped files changed without a version bump
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          base_version="$(git show "$BASE:package.json" | jq -r .version)"
+          head_version="$(jq -r .version package.json)"
+          shipped="$(git diff --name-only "$BASE"...HEAD -- src styles/prompt-this-spot.css)"
+          deps_changed="$(git show "$BASE:package.json" | jq -S '{dependencies, peerDependencies}' | diff -q - <(jq -S '{dependencies, peerDependencies}' package.json) >/dev/null || echo yes)"
+          if [ -z "$shipped" ] && [ -z "$deps_changed" ]; then
+            echo "No shipped files changed."
+            exit 0
+          fi
+          if [ "$base_version" = "$head_version" ]; then
+            echo "::error file=package.json::This PR changes what the package ships but keeps version $head_version. Raise it (patch for fixes, minor for new options or exports, major for breaking changes)."
+            exit 1
+          fi
+          if [ "$(printf '%s\n%s\n' "$base_version" "$head_version" | sort -V | tail -n1)" != "$head_version" ]; then
+            echo "::error file=package.json::Version $head_version is lower than main's $base_version."
+            exit 1
+          fi
+          echo "Version $base_version -> $head_version."
