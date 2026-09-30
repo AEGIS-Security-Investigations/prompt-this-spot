@@ -308,4 +308,46 @@ describe("useCaptureController", () => {
 
     expect(result.current.screenshots).toHaveLength(0);
   });
+
+  it("keeps each capture's page URL when the app navigates afterwards", async () => {
+    const happy = (
+      window as unknown as { happyDOM: { setURL: (u: string) => void } }
+    ).happyDOM;
+    happy.setURL("https://app.example.com/orders?status=open");
+    try {
+      const { result } = renderController();
+      const button = makeElement(`<button data-testid="first">First</button>`);
+
+      await act(async () => {
+        result.current.addSelection(
+          button,
+          "/orders",
+          "https://app.example.com/orders?status=open"
+        );
+      });
+      await act(async () => result.current.capturePageScreenshot());
+
+      // Client-side navigation, then a capture on the new page.
+      history.pushState({}, "", "/orders/42?tab=items");
+      await act(async () => result.current.capturePageScreenshot());
+
+      const [selection] = result.current.selections;
+      const [elementShot, firstPage, secondPage] = result.current.screenshots;
+      expect(selection?.pageUrl).toBe(
+        "https://app.example.com/orders?status=open"
+      );
+      expect(elementShot?.pageUrl).toBe(
+        "https://app.example.com/orders?status=open"
+      );
+      expect(firstPage?.pageUrl).toBe(
+        "https://app.example.com/orders?status=open"
+      );
+      expect(secondPage?.pageUrl).toBe(
+        "https://app.example.com/orders/42?tab=items"
+      );
+      expect(secondPage?.pathname).toBe("/orders/42");
+    } finally {
+      happy.setURL("about:blank");
+    }
+  });
 });

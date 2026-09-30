@@ -5,9 +5,11 @@ import type {
   ElementDescription,
   InspectPromptScreenshot,
 } from "../core/types";
+import { useCurrentPageUrl } from "../core/useCurrentPageUrl";
 import { cn } from "../lib/cn";
 import { InspectPromptCaptureControls } from "./InspectPromptCaptureControls";
 import { InspectPromptHandoffActions } from "./InspectPromptHandoffActions";
+import { InspectPromptPageUrl } from "./InspectPromptPageUrl";
 import { useInspectPromptPreferences } from "./InspectPromptPreferencesContext";
 import { InspectPromptScreenshotList } from "./InspectPromptScreenshotList";
 import { InspectPromptSelectionList } from "./InspectPromptSelectionList";
@@ -78,6 +80,8 @@ export const InspectPromptDrawer = ({
   // InspectPromptTestCoverageOption); the drawer only needs the value so the
   // assembled prompt picks it up.
   const { testCoverageRequested } = useInspectPromptPreferences();
+  // Watched only while the drawer is open; captures snapshot their own URL.
+  const currentPageUrl = useCurrentPageUrl(open);
   const {
     rawPrompt,
     setRawPrompt,
@@ -144,6 +148,8 @@ export const InspectPromptDrawer = ({
         </button>
       </div>
 
+      <InspectPromptPageUrl url={currentPageUrl} />
+
       <InspectPromptCaptureControls
         pickMode={pickMode}
         capturing={capturing}
@@ -153,12 +159,14 @@ export const InspectPromptDrawer = ({
 
       <InspectPromptSelectionList
         selections={selections}
+        currentPageUrl={currentPageUrl}
         onRemove={onRemove}
         onClear={onClear}
       />
 
       <InspectPromptScreenshotList
         screenshots={screenshots}
+        currentPageUrl={currentPageUrl}
         onRemove={onRemoveScreenshot}
         onRetry={onRetryScreenshot}
         onNoteChange={onScreenshotNoteChange}

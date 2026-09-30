@@ -7,6 +7,7 @@ import {
 } from "../annotate/ScreenshotAnnotator";
 import type { InspectPromptScreenshot } from "../core/types";
 import { cn } from "../lib/cn";
+import { InspectPromptCapturedPageUrl } from "./InspectPromptCapturedPageUrl";
 import { InspectPromptScreenshotPreview } from "./InspectPromptScreenshotPreview";
 import {
   inspectPromptHint,
@@ -25,6 +26,8 @@ import {
 
 interface InspectPromptScreenshotRowProps {
   screenshot: InspectPromptScreenshot;
+  /** URL of the page the reviewer is on now. */
+  currentPageUrl?: string;
   onRemove: (id: string) => void;
   onRetry: (id: string) => void;
   onNoteChange: (id: string, note: string) => void;
@@ -87,6 +90,7 @@ const StatusIcon = ({
  */
 export const InspectPromptScreenshotRow = ({
   screenshot,
+  currentPageUrl = "",
   onRemove,
   onRetry,
   onNoteChange,
@@ -125,6 +129,11 @@ export const InspectPromptScreenshotRow = ({
             >
               {statusLabel(screenshot)}
             </p>
+            <InspectPromptCapturedPageUrl
+              capturedUrl={screenshot.pageUrl}
+              currentUrl={currentPageUrl}
+              testId="inspect-prompt-screenshot-page-url"
+            />
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">

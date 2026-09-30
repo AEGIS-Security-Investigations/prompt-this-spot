@@ -5,6 +5,7 @@ import type { ScreenshotAnnotation } from "../annotate/annotationTypes";
 import { usePromptThisSpotConfig } from "../config/PromptThisSpotConfig";
 import { captureDocumentRegion } from "./captureDocumentRegion";
 import { makeInspectPromptId } from "./makeInspectPromptId";
+import { readPageUrl } from "./readPageUrl";
 import {
   resolveElementCaptureRect,
   resolveViewportCaptureRect,
@@ -123,12 +124,16 @@ export const useCaptureScreenshots = (
 
   const capturePage = useCallback(() => {
     const pathname = window.location.pathname;
+    // Snapshotted now: the queue may not reach this capture until after the
+    // app has navigated, and the shot must stay labelled with ITS page.
+    const pageUrl = readPageUrl();
     enqueue(
       {
         kind: "page",
         selectionId: null,
         label: `Page · ${pathname}`,
         pathname,
+        pageUrl,
         previewDataUrl: null,
         url: null,
         expiresAt: null,
@@ -149,7 +154,7 @@ export const useCaptureScreenshots = (
 
   const captureElement: InspectPromptScreenshots["captureElement"] =
     useCallback(
-      ({ selectionId, label, pathname, rect }) => {
+      ({ selectionId, label, pathname, pageUrl, rect }) => {
         // The rect is resolved to document coordinates NOW, at pick time — by
         // the time the queue reaches this capture the element may have moved,
         // or its dialog may have closed. The app-push transform is deliberately
@@ -163,6 +168,7 @@ export const useCaptureScreenshots = (
             selectionId,
             label,
             pathname,
+            ...(pageUrl ? { pageUrl } : {}),
             previewDataUrl: null,
             url: null,
             expiresAt: null,

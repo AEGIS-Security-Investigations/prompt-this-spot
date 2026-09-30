@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { readPageUrl } from "./readPageUrl";
 
 /** Marks a tool's own UI so it is never treated as an inspect target. */
 export const INSPECT_IGNORE_ATTR = "data-inspect-ignore";
@@ -12,8 +13,12 @@ const isToolChrome = (target: EventTarget | null): boolean =>
 export interface UsePickModeOptions {
   /** Whether click-to-pick is currently active. */
   active: boolean;
-  /** Called with each picked element and the route it was picked on. */
-  onPick: (element: Element, pathname: string) => void;
+  /**
+   * Called with each picked element, the route it was picked on and the
+   * sanitized absolute URL of that page. Hosts that only take the first two
+   * arguments keep working.
+   */
+  onPick: (element: Element, pathname: string, pageUrl: string) => void;
   /** Report the box under the pointer so the host can draw a highlight. */
   onHover: (rect: DOMRect | null) => void;
   /** Escape pressed — stop picking (the host decides whether to also close). */
@@ -81,7 +86,7 @@ export const usePickMode = ({
       // remaining click-based dismissal, so picking inside an open dialog is safe.
       event.preventDefault();
       event.stopPropagation();
-      onPick(target, window.location.pathname);
+      onPick(target, window.location.pathname, readPageUrl());
       // Stay in pick mode for rapid multi-pick; Esc / the toggle stops it.
     };
 

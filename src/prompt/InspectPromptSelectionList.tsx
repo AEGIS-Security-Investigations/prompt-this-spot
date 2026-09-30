@@ -3,6 +3,7 @@
 import { Trash2 } from "lucide-react";
 import type { ElementDescription } from "../core/types";
 import { cn } from "../lib/cn";
+import { InspectPromptCapturedPageUrl } from "./InspectPromptCapturedPageUrl";
 import {
   inspectPromptClearButton,
   inspectPromptHint,
@@ -16,6 +17,8 @@ import {
 
 interface InspectPromptSelectionListProps {
   selections: ElementDescription[];
+  /** URL of the page the reviewer is on now, to flag spots from other pages. */
+  currentPageUrl?: string;
   onRemove: (id: string) => void;
   onClear: () => void;
 }
@@ -25,13 +28,16 @@ interface InspectPromptSelectionListProps {
  */
 export const InspectPromptSelectionList = ({
   selections,
+  currentPageUrl = "",
   onRemove,
   onClear,
 }: InspectPromptSelectionListProps) => {
   const hasSelections = selections.length > 0;
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-3">
+    // min-h keeps the list visible on short windows, where it would otherwise
+    // shrink to nothing before the drawer starts to scroll.
+    <div className="min-h-28 flex-1 overflow-y-auto px-4 py-3">
       <div className="mb-2 flex items-center justify-between">
         <span className={inspectPromptSectionLabel}>{"// Selected spots"}</span>
         {hasSelections ? (
@@ -67,6 +73,11 @@ export const InspectPromptSelectionList = ({
                 <p className={inspectPromptSelectionSelector}>
                   {selection.selector}
                 </p>
+                <InspectPromptCapturedPageUrl
+                  capturedUrl={selection.pageUrl}
+                  currentUrl={currentPageUrl}
+                  testId="inspect-prompt-list-item-page-url"
+                />
               </div>
               <button
                 type="button"

@@ -28,6 +28,12 @@ export interface ElementDescription {
   block: string;
   /** Route the element was captured on (window.location.pathname). */
   pathname: string;
+  /**
+   * Sanitized absolute URL of the page the element was picked on, snapshotted
+   * at pick time so later navigation never relabels it. Optional so
+   * descriptions built without it (older callers, fixtures) still type-check.
+   */
+  pageUrl?: string;
 }
 
 /** A rectangle in document coordinates (page origin, not viewport origin). */
@@ -63,6 +69,8 @@ export interface InspectPromptScreenshot {
   label: string;
   /** Route the shot was taken on. */
   pathname: string;
+  /** Sanitized absolute URL of the page, snapshotted when the shot was taken. */
+  pageUrl?: string;
   /** Local data URL, available as soon as the canvas render finishes. */
   previewDataUrl: string | null;
   /** Public S3 URL, available once the upload completes. */
@@ -113,6 +121,8 @@ export interface InspectPromptScreenshots {
     selectionId: string;
     label: string;
     pathname: string;
+    /** Sanitized page URL read at pick time; see ElementDescription.pageUrl. */
+    pageUrl?: string;
     /** The element's box in VIEWPORT coordinates, read at pick time. */
     rect: Pick<DOMRect, "left" | "top" | "width" | "height">;
   }) => void;

@@ -11,6 +11,8 @@ import {
 
 interface InspectPromptScreenshotListProps {
   screenshots: InspectPromptScreenshot[];
+  /** URL of the page the reviewer is on now, to flag shots from other pages. */
+  currentPageUrl?: string;
   onRemove: (id: string) => void;
   /** Re-run a failed shot's original capture. */
   onRetry: (id: string) => void;
@@ -25,6 +27,7 @@ interface InspectPromptScreenshotListProps {
  */
 export const InspectPromptScreenshotList = ({
   screenshots,
+  currentPageUrl = "",
   onRemove,
   onRetry,
   onNoteChange,
@@ -50,6 +53,7 @@ export const InspectPromptScreenshotList = ({
           <InspectPromptScreenshotRow
             key={screenshot.id}
             screenshot={screenshot}
+            currentPageUrl={currentPageUrl}
             onRemove={onRemove}
             onRetry={onRetry}
             onNoteChange={onNoteChange}

@@ -46,7 +46,7 @@ export const useUserFeedbackSubmit = ({
   screenshots,
   onSubmitted,
 }: UseUserFeedbackSubmitParams): UserFeedbackSubmit => {
-  const { notify: toast, submitFeedback } = usePromptThisSpotConfig();
+  const { notify: toast, submitFeedback, repoSlug } = usePromptThisSpotConfig();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -66,10 +66,14 @@ export const useUserFeedbackSubmit = ({
         message: trimmed,
         category,
         pathname: window.location.pathname,
+        // The page URL and repository reach the host only inside promptText.
+        // The structured fields below keep their exact shape: hosts pass this
+        // object straight into typed API inputs, where an unknown field fails.
         promptText: buildMultiInspectPrompt({
           descriptions: selections,
           request: trimmed,
           screenshots: ready,
+          repoSlug,
         }),
         selections: selections.map((selection) => ({
           label: selection.label,
@@ -114,6 +118,7 @@ export const useUserFeedbackSubmit = ({
     category,
     message,
     onSubmitted,
+    repoSlug,
     screenshots,
     selections,
     submitFeedback,
