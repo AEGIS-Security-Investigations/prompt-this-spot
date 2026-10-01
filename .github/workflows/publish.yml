@@ -4,11 +4,12 @@ name: Publish to npm
 # not have yet, tags the commit v<version>, creates a GitHub release, and then
 # asks the consumer apps to update.
 #
-# Nothing is published unless the repository variable NPM_PUBLISH is "true".
-# That holds for every trigger, including a manual run. A manual run is a dry
-# run by default: it audits the tarball and runs `npm publish --dry-run`,
-# which uploads nothing. Publishing for real by hand needs NPM_PUBLISH set AND
-# the "publish" input ticked.
+# Nothing is published unless the repository variable NPM_PUBLISH is "true"
+# and the run is on main, the reviewed release branch. That holds for every
+# trigger, including a manual run. A manual run is a dry run by default: it
+# audits the tarball and runs `npm publish --dry-run`, which uploads nothing.
+# Publishing for real by hand needs NPM_PUBLISH set, a run on main AND the
+# "publish" input ticked; a manual run from any other branch is a dry run.
 #
 # Publishing uses npm trusted publishing (OIDC): on npmjs.com, add this
 # repository and "publish.yml" as a trusted publisher for the package. An
@@ -24,7 +25,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish for real (also needs the NPM_PUBLISH variable). Unticked = dry run."
+        description: "Publish for real (also needs the NPM_PUBLISH variable and a run on main). Unticked = dry run."
         type: boolean
         default: false
 
@@ -45,7 +46,7 @@ jobs:
       contents: write
       id-token: write
     outputs:
-      published: ${{ steps.mode.outputs.real == 'true' && steps.version.outputs.status == 'unpublished' }}
+      published: ${{ steps.mode.outputs.real == 'true' && steps.version.outputs.status == 'unpublished' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -58,27 +59,23 @@ jobs:
       - name: Use an npm that supports trusted publishing (11.5.1+)
         run: npm install -g npm@latest
 
+      # See scripts/lib/publishMode.ts: a real publish needs NPM_PUBLISH,
+      # the reviewed main branch, and a push or a ticked "publish" input.
       - name: Real publish or dry run?
         id: mode
         env:
           ENABLED: ${{ vars.NPM_PUBLISH == 'true' }}
           EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
           REQUESTED: ${{ inputs.publish == true }}
-        run: |
-          if [ "$ENABLED" = "true" ] && { [ "$EVENT" = "push" ] || [ "$REQUESTED" = "true" ]; }; then
-            echo "real=true" >> "$GITHUB_OUTPUT"
-            echo "Real publish."
-          else
-            echo "real=false" >> "$GITHUB_OUTPUT"
-            echo "Dry run: nothing will be uploaded (NPM_PUBLISH=$ENABLED, publish input=$REQUESTED)."
-          fi
+        run: bun scripts/publish-mode.ts
 
-      # Fails the job on a network, auth or rate-limit error instead of
-      # treating "couldn't check" as "not published".
+      # Fails the job unless the registry gives a validated answer for this
+      # exact package (scripts/lib/npmVersionStatus.ts).
       - name: Is this version on npm yet?
         id: version
         run: |
-          status="$(bun scripts/npm-version-status.ts)"
+          status="$(bun scripts/npm-version-status.ts)" || exit 1
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "$(jq -r '.name + "@" + .version' package.json) is $status."
 
@@ -92,13 +89,13 @@ jobs:
         run: npm publish --dry-run --provenance=false
 
       - name: Publish
-        if: steps.mode.outputs.real == 'true' && steps.version.outputs.status == 'unpublished'
+        if: steps.mode.outputs.real == 'true' && steps.version.outputs.status == 'unpublished' && github.ref == 'refs/heads/main'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
 
       - name: Tag and release
-        if: steps.mode.outputs.real == 'true' && steps.version.outputs.status == 'unpublished'
+        if: steps.mode.outputs.real == 'true' && steps.version.outputs.status == 'unpublished' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
