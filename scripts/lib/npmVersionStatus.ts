@@ -54,7 +54,9 @@ export const registryPackagePath = (name: string): string => {
   if (!PACKAGE_NAME.test(name)) {
     throw new Error(`Not a valid npm package name: ${JSON.stringify(name)}`);
   }
-  return name.replace("/", "%2f");
+  // The name check allows at most one "/" (after the scope); encode every
+  // one anyway so the path can never carry a raw separator.
+  return name.replaceAll("/", "%2f");
 };
 
 export const classifyRegistryResponse = (

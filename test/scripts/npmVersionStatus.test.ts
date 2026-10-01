@@ -129,6 +129,8 @@ describe("registryPackagePath", () => {
     expect(() => registryPackagePath("../etc")).toThrow();
     expect(() => registryPackagePath("Upper")).toThrow();
     expect(() => registryPackagePath("")).toThrow();
+    expect(() => registryPackagePath("@acme/pkg/extra")).toThrow();
+    expect(() => registryPackagePath("@acme/../pkg")).toThrow();
   });
 });
 
