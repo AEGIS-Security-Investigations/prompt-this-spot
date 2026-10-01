@@ -58,6 +58,7 @@ export const useInspectPromptActions = (
         screenshots,
         testCoverage,
         screenshotRetentionDays: promptScreenshotRetentionDays,
+        repoSlug,
       }),
     [
       selections,
@@ -65,6 +66,7 @@ export const useInspectPromptActions = (
       screenshots,
       testCoverage,
       promptScreenshotRetentionDays,
+      repoSlug,
     ]
   );
 

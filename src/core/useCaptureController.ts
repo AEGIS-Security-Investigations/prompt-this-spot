@@ -37,7 +37,9 @@ export interface InspectPromptController {
    */
   addSelection: (
     element: Element,
-    pathname: string
+    pathname: string,
+    /** Sanitized page URL at pick time; omitted by older callers. */
+    pageUrl?: string
   ) => ElementDescription | null;
   removeSelection: (id: string) => void;
   clearSelections: () => void;
@@ -136,8 +138,12 @@ export const useCaptureController = ({
   }, []);
 
   const addSelection = useCallback(
-    (element: Element, pathname: string): ElementDescription | null => {
-      const next = describeElement({ pathname, element });
+    (
+      element: Element,
+      pathname: string,
+      pageUrl?: string
+    ): ElementDescription | null => {
+      const next = describeElement({ pathname, pageUrl, element });
       // Dedupe on the full-depth dedupeKey (the readable selector is
       // depth-limited and can collide across repeated layouts).
       if (selectionsRef.current.some((s) => s.dedupeKey === next.dedupeKey)) {
@@ -158,6 +164,7 @@ export const useCaptureController = ({
           selectionId: next.id,
           label: next.label,
           pathname,
+          pageUrl: next.pageUrl,
           rect,
         });
       }

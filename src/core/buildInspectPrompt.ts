@@ -12,6 +12,8 @@ import type { ElementDescription, InspectPromptScreenshot } from "./types";
 export interface InspectPromptContext {
   /** Route the element was captured on (e.g. window.location.pathname). */
   pathname: string;
+  /** Sanitized absolute URL of that page (see `sanitizePageUrl`). */
+  pageUrl?: string;
   /** The clicked element. */
   element: Element;
 }
@@ -63,6 +65,7 @@ const buildBlock = (element: Element): string => {
  */
 export const describeElement = ({
   pathname,
+  pageUrl,
   element,
 }: InspectPromptContext): ElementDescription => ({
   id: makeInspectPromptId(),
@@ -71,6 +74,7 @@ export const describeElement = ({
   dedupeKey: `${pathname}|${buildUniqueDomKey(element)}`,
   block: buildBlock(element),
   pathname,
+  ...(pageUrl ? { pageUrl } : {}),
 });
 
 export interface MultiInspectPromptContext {
@@ -90,6 +94,12 @@ export interface MultiInspectPromptContext {
    * the agent. Defaults to 7.
    */
   screenshotRetentionDays?: number;
+  /**
+   * GitHub `owner/name` of the app (the host's configured `repoSlug`). Named
+   * in the prompt so the agent knows which codebase a route belongs to — two
+   * apps can share `/dashboard`, and `localhost:3000` says nothing.
+   */
+  repoSlug?: string;
 }
 
 /**
@@ -137,6 +147,27 @@ const markupLine = (screenshot: InspectPromptScreenshot): string[] => {
   ];
 };
 
+/**
+ * Opening lines naming the repository and, when one page is in play, its URL.
+ * Only what is known is written: no environment label is guessed from the
+ * hostname. Empty when neither is known, which keeps the prompt exactly as it
+ * was for hosts that configure neither.
+ */
+const contextHeader = (
+  repoSlug: string | undefined,
+  pageUrl: string | undefined
+): string[] => {
+  const lines = [
+    ...(repoSlug ? [`Repository: ${repoSlug}`] : []),
+    ...(pageUrl ? [`Page URL: ${pageUrl}`] : []),
+  ];
+  return lines.length > 0 ? [...lines, ""] : [];
+};
+
+/** A captured page's full URL, as its own line under a selection or shot. */
+const pageUrlLine = (pageUrl: string | undefined, indent: string): string[] =>
+  pageUrl ? [`${indent}Page URL: ${pageUrl}`] : [];
+
 /** The element shot belonging to one selection, if it uploaded successfully. */
 const elementScreenshotLine = (
   description: ElementDescription,
@@ -173,6 +204,7 @@ const pageScreenshotLines = (
       : `Full-page screenshots (${pageShots.length}):`,
     ...pageShots.flatMap((shot) => [
       `- ${shot.pathname}: ${shot.url}`,
+      ...pageUrlLine(shot.pageUrl, "  "),
       ...markupLine(shot),
       ...noteLine(shot),
     ]),
@@ -209,6 +241,7 @@ export const buildMultiInspectPrompt = ({
   screenshots,
   testCoverage,
   screenshotRetentionDays = 7,
+  repoSlug,
 }: MultiInspectPromptContext): string => {
   const ready = readyScreenshots(screenshots);
   const pageShotLines = pageScreenshotLines(ready);
@@ -228,12 +261,17 @@ export const buildMultiInspectPrompt = ({
   // The image alone is the context, so say that rather than describing zero
   // spots.
   if (descriptions.length === 0) {
-    return ["In our app, here is what I'm looking at:", ...trailer].join("\n");
+    return [
+      ...contextHeader(repoSlug, undefined),
+      "In our app, here is what I'm looking at:",
+      ...trailer,
+    ].join("\n");
   }
 
   const [only] = descriptions;
   if (descriptions.length === 1 && only) {
     return [
+      ...contextHeader(repoSlug, only.pageUrl),
       `In our app on the page "${only.pathname}", I'm pointing at this element:`,
       "",
       only.block,
@@ -243,11 +281,15 @@ export const buildMultiInspectPrompt = ({
   }
 
   const lines: string[] = [
+    ...contextHeader(repoSlug, undefined),
     `In our app, I'm pointing at these ${descriptions.length} spots:`,
     "",
   ];
   descriptions.forEach((description, index) => {
+    // Each spot carries its own URL: picking can span navigations, and the
+    // agent needs to know which page each one was on.
     lines.push(`[${index + 1}] On the page "${description.pathname}":`);
+    lines.push(...pageUrlLine(description.pageUrl, "- "));
     lines.push(description.block);
     lines.push(...elementScreenshotLine(description, ready));
     lines.push("");
@@ -267,9 +309,10 @@ export const buildMultiInspectPrompt = ({
  */
 export const buildInspectPrompt = ({
   pathname,
+  pageUrl,
   element,
 }: InspectPromptContext): string =>
   buildMultiInspectPrompt({
-    descriptions: [describeElement({ pathname, element })],
+    descriptions: [describeElement({ pathname, pageUrl, element })],
     request: "",
   });

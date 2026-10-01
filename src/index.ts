@@ -21,9 +21,12 @@ export * from "./config/PromptThisSpotConfig";
 export * from "./core/buildInspectPrompt";
 export * from "./core/getAppPushRoot";
 export * from "./core/inspectPromptLauncherCorner";
+export * from "./core/readPageUrl";
+export * from "./core/sanitizePageUrl";
 // Capture core (DOM description, prompt assembly, screenshots)
 export * from "./core/types";
 export * from "./core/useCaptureController";
+export * from "./core/useCurrentPageUrl";
 export * from "./core/usePickMode";
 export * from "./feedback/shouldMountUserFeedbackLauncher";
 export { UserFeedbackDrawer } from "./feedback/UserFeedbackDrawer";

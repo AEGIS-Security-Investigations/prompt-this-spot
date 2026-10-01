@@ -1,8 +1,12 @@
 import { cn } from "../lib/cn";
 
-/** Shell: agent panel — distinct from app chrome in both light and dark. */
+/**
+ * Shell: agent panel — distinct from app chrome in both light and dark. Scrolls
+ * as a whole on short windows, so the copy / hand-off buttons at the bottom
+ * can always be reached instead of being clipped below the viewport.
+ */
 export const inspectPromptDrawerShell = cn(
-  "pointer-events-auto fixed inset-y-0 left-0 z-[124] flex w-[360px] max-w-[90vw] flex-col",
+  "pointer-events-auto fixed inset-y-0 left-0 z-[124] flex w-[360px] max-w-[90vw] flex-col overflow-y-auto",
   "border-r border-violet-300/70 bg-gradient-to-br from-violet-50 via-white to-cyan-50/40",
   "text-zinc-900",
   "dark:border-violet-500/40 dark:from-[#0a0812] dark:via-[#0a0812] dark:to-[#0d0a14]",
@@ -146,6 +150,17 @@ export const inspectPromptSelectionTitle = cn(
 
 export const inspectPromptSelectionIndex = cn(
   "mr-1.5 text-violet-600/90 dark:text-violet-400/80"
+);
+
+/** The current page's full URL: wraps anywhere so a long one stays readable. */
+export const inspectPromptPageUrlValue = cn(
+  "mt-1 max-h-16 select-all overflow-y-auto break-all font-mono text-[11px] leading-snug",
+  "text-zinc-800 dark:text-zinc-200"
+);
+
+/** "Captured on …" under a selection or shot taken on a different page. */
+export const inspectPromptCapturedPageUrl = cn(
+  "truncate font-mono text-[10px] text-amber-700 dark:text-amber-400/80"
 );
 
 export const inspectPromptSelectionSelector = cn(

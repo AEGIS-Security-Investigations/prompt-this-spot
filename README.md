@@ -52,6 +52,9 @@ Both tools also:
 Clicking an "Upgrade plan" button on `/settings/billing` and typing a request produces this prompt:
 
 ```text
+Repository: your-org/your-repo
+Page URL: https://app.example.com/settings/billing?tab=plans
+
 In our app on the page "/settings/billing", I'm pointing at this element:
 
 - What it shows: "Upgrade plan"
@@ -62,13 +65,15 @@ In our app on the page "/settings/billing", I'm pointing at this element:
 What I want changed here: Make this button full width on mobile
 ```
 
+The repository comes from `repoSlug`, and the page URL is the one in the browser when the element was picked, so the agent can tell apart two apps with the same route, or a preview deployment from local development. Secrets in the URL (credentials, tokens, API keys, OAuth codes, signed-URL signatures, in the query or the fragment) are replaced with `REDACTED` before the URL is shown or stored. When spots come from different pages, each carries its own URL. The drawer shows the current page's URL and keeps it up to date as the app navigates.
+
 When screenshots are on, each element also gets a public screenshot URL the agent can open. An optional checkbox appends a request for unit and end-to-end test coverage.
 
 ## How it works
 
 1. **Pick.** Pick mode highlights the element under the cursor. A click records a description of the element straight away, so it survives the element unmounting later (for example, when its dialog closes).
 2. **Capture.** The package renders a screenshot of the element and its surroundings in the browser and hands the PNG to your upload function, which returns a public URL.
-3. **Assemble.** It builds a plain-text prompt from the page path, element descriptions, screenshot links and your request.
+3. **Assemble.** It builds a plain-text prompt from the repository, the page URL, element descriptions, screenshot links and your request.
 4. **Hand off.** "Prompt this spot" copies the prompt or opens it in Claude Code. "Send feedback" passes it, with the rest of the report, to your `submitFeedback` function.
 
 The package ships as TypeScript source. It uses React 19, Tailwind CSS classes, shadcn/ui theme tokens, Radix primitives and `modern-screenshot`. It has no backend: your app supplies the pieces that differ between apps (who may use each tool, where screenshots are stored, where feedback goes) through one provider.
@@ -233,7 +238,7 @@ What each part does:
 - `data-app-push-root` marks the element the drawers push aside when they open. Keep the two gates outside it so the drawers stay fixed at the left edge.
 - `eligible` decides who sees each tool. A gate renders nothing until it is true, and a user who isn't eligible never downloads the tools' heavy code (the screenshot renderer, CodeMirror). The feedback tool also waits for the first click on its launcher, because it's usually shown to every signed-in user.
 - Only mount the gates you want. An app that only wants "Send feedback" can leave out `InspectPromptToolGate` and `uploadPromptScreenshot`.
-- `repoSlug` is the GitHub repository the "Send to Claude Code" buttons open.
+- `repoSlug` is the GitHub repository the "Send to Claude Code" buttons open. It is also named at the top of every prompt, including feedback reports' `promptText`.
 
 ### 5. Mount it in your root layout
 
@@ -326,7 +331,7 @@ Every field of `PromptThisSpotConfig` is optional:
 |---|---|---|
 | `notify(toast)` | no-op | Shows `{ title, description?, variant? }` toasts (shadcn/ui's `toast()` fits) |
 | `logError(message, context)` | `console.error` | Reports a screenshot that failed |
-| `repoSlug` | none | GitHub `owner/name` that "Send to Claude Code" opens |
+| `repoSlug` | none | GitHub `owner/name` that "Send to Claude Code" opens, and that prompts name |
 | `uploadPromptScreenshot` / `uploadFeedbackScreenshot` | throws | Screenshot storage (see above) |
 | `promptScreenshotRetentionDays` | `7` | How many days "Prompt this spot" tells the agent the screenshot links last; match it to what your storage keeps |
 | `promptScreenshotsToggle` | `false` | Shows a "Capture screenshots" checkbox in the "Prompt this spot" drawer, for apps without a settings UI of their own for that preference |
@@ -396,8 +401,11 @@ Publishing is set up ([`publish.yml`](.github/workflows/publish.yml)), but until
 
 ```bash
 bun install
-bun run check   # typecheck + biome + tests
+bun run check      # typecheck + biome + unit tests
+bun run test:e2e   # Playwright, against the fixture app in e2e/fixture
 ```
+
+The end-to-end specs need Chromium: run `bunx playwright install chromium` once, or point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you already have.
 
 If you add or change a Tailwind class in `src`, rebuild the prebuilt stylesheet and commit it with the change (CI fails when it's out of date):
 

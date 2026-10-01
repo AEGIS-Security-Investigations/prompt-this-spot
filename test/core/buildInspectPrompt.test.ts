@@ -531,3 +531,186 @@ describe("buildMultiInspectPrompt screenshots", () => {
     expect(prompt).not.toContain("spots");
   });
 });
+
+describe("buildMultiInspectPrompt page URL and repository", () => {
+  const describeAt = (html: string, pathname: string, pageUrl?: string) => {
+    const host = render(html);
+    const el = host.firstElementChild as Element;
+    return describeElement({ pathname, pageUrl, element: el });
+  };
+
+  const pageShot = (
+    id: string,
+    pathname: string,
+    pageUrl: string | undefined,
+    url: string
+  ): InspectPromptScreenshot => ({
+    id,
+    kind: "page",
+    selectionId: null,
+    label: `Page · ${pathname}`,
+    pathname,
+    ...(pageUrl ? { pageUrl } : {}),
+    previewDataUrl: null,
+    url,
+    expiresAt: null,
+    status: "ready",
+    error: null,
+    note: "",
+  });
+
+  it("names the repository and the full page URL for a single selection", () => {
+    const prompt = buildMultiInspectPrompt({
+      descriptions: [
+        describeAt(
+          `<button data-testid="cta">Go</button>`,
+          "/dashboard",
+          "http://localhost:3000/dashboard?tab=billing#usage"
+        ),
+      ],
+      request: "Make it blue",
+      repoSlug: "acme/web-app",
+    });
+
+    expect(
+      prompt.startsWith(
+        "Repository: acme/web-app\nPage URL: http://localhost:3000/dashboard?tab=billing#usage\n\n"
+      )
+    ).toBe(true);
+    // The pathname phrasing apps' tests rely on is unchanged.
+    expect(prompt).toContain(
+      'In our app on the page "/dashboard", I\'m pointing at this element:'
+    );
+  });
+
+  it("tells apart the same route in two projects and hosts", () => {
+    const html = `<button data-testid="cta">Go</button>`;
+    const first = buildMultiInspectPrompt({
+      descriptions: [
+        describeAt(html, "/dashboard", "https://app.example.com/dashboard"),
+      ],
+      request: "",
+      repoSlug: "acme/web-app",
+    });
+    const second = buildMultiInspectPrompt({
+      descriptions: [
+        describeAt(
+          html,
+          "/dashboard",
+          "https://web-git-feature.preview.example.dev/dashboard"
+        ),
+      ],
+      request: "",
+      repoSlug: "acme/field-app",
+    });
+
+    expect(first).toContain("Repository: acme/web-app");
+    expect(first).toContain("Page URL: https://app.example.com/dashboard");
+    expect(second).toContain("Repository: acme/field-app");
+    expect(second).toContain(
+      "Page URL: https://web-git-feature.preview.example.dev/dashboard"
+    );
+    expect(first).not.toBe(second);
+  });
+
+  it("gives each of several spots the URL it was picked on", () => {
+    const prompt = buildMultiInspectPrompt({
+      descriptions: [
+        describeAt(
+          `<button>One</button>`,
+          "/orders",
+          "https://app.example.com/orders?status=open"
+        ),
+        describeAt(
+          `<button>Two</button>`,
+          "/orders",
+          "https://app.example.com/orders?status=closed"
+        ),
+      ],
+      request: "Align these",
+      repoSlug: "acme/web-app",
+    });
+
+    expect(prompt.startsWith("Repository: acme/web-app\n\n")).toBe(true);
+    // No single page URL in the header: the spots may be on different pages.
+    expect(prompt.split("\n\n")[0]).not.toContain("Page URL:");
+    expect(prompt).toContain(
+      '[1] On the page "/orders":\n- Page URL: https://app.example.com/orders?status=open\n'
+    );
+    expect(prompt).toContain(
+      '[2] On the page "/orders":\n- Page URL: https://app.example.com/orders?status=closed\n'
+    );
+  });
+
+  it("labels each full-page screenshot with its own page URL", () => {
+    const prompt = buildMultiInspectPrompt({
+      descriptions: [],
+      request: "Why is this cut off?",
+      repoSlug: "acme/web-app",
+      screenshots: [
+        pageShot(
+          "a",
+          "/reports",
+          "https://app.example.com/reports?range=7d",
+          "https://cdn.example.test/a.png"
+        ),
+        pageShot(
+          "b",
+          "/reports",
+          "https://app.example.com/reports?range=30d",
+          "https://cdn.example.test/b.png"
+        ),
+      ],
+    });
+
+    expect(prompt.startsWith("Repository: acme/web-app\n\n")).toBe(true);
+    expect(prompt).toContain("In our app, here is what I'm looking at:");
+    expect(prompt).toContain(
+      "- /reports: https://cdn.example.test/a.png\n  Page URL: https://app.example.com/reports?range=7d"
+    );
+    expect(prompt).toContain(
+      "- /reports: https://cdn.example.test/b.png\n  Page URL: https://app.example.com/reports?range=30d"
+    );
+  });
+
+  it("is byte-for-byte the old prompt when neither URL nor repository is known", () => {
+    const html = `<button data-testid="cta">Go</button>`;
+    const legacy = buildMultiInspectPrompt({
+      descriptions: [describeAt(html, "/dashboard")],
+      request: "Make it blue",
+      screenshots: [
+        pageShot(
+          "a",
+          "/dashboard",
+          undefined,
+          "https://cdn.example.test/a.png"
+        ),
+      ],
+    });
+
+    expect(legacy).not.toContain("Repository:");
+    expect(legacy).not.toContain("Page URL:");
+    expect(
+      legacy.startsWith(
+        'In our app on the page "/dashboard", I\'m pointing at this element:'
+      )
+    ).toBe(true);
+  });
+
+  it("describeElement keeps the pathname contract and adds pageUrl only when given", () => {
+    const el = render(`<a href="/x">X</a>`).firstElementChild as Element;
+    const withUrl = describeElement({
+      pathname: "/x",
+      pageUrl: "https://app.example.com/x?tab=1",
+      element: el,
+    });
+    const withoutUrl = describeElement({ pathname: "/x", element: el });
+
+    expect(withUrl.pathname).toBe("/x");
+    expect(withUrl.pageUrl).toBe("https://app.example.com/x?tab=1");
+    expect("pageUrl" in withoutUrl).toBe(false);
+    // Dedupe is still per route + element, so a query change doesn't let the
+    // same spot be picked twice.
+    expect(withUrl.dedupeKey).toBe(withoutUrl.dedupeKey);
+  });
+});
