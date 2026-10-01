@@ -23,6 +23,10 @@
     "!src/**/*.test.ts",
     "!src/**/*.test.tsx"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",

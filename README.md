@@ -121,6 +121,10 @@ bun add lucide-react @uiw/react-codemirror @codemirror/view
 
 npm, pnpm and Yarn take the same `github:owner/repo#sha` spec. Pinning to a commit also lets the [update workflow](#keeping-apps-up-to-date) open a pull request whenever this repository changes.
 
+Pin a commit that is on `main`. A commit from a pull request's branch can disappear once the branch is deleted, and every install of it then fails. The update workflow also refuses to move such a pin.
+
+Once a version is on npm, depend on that instead, pinned exactly: `bun add prompt-this-spot@<version> --exact`.
+
 ### 2. Let your bundler compile it
 
 The package ships as TypeScript source, so your bundler has to compile it. In Next.js:
@@ -348,7 +352,9 @@ If the classes live in your app's source files, Tailwind already scans them.
 
 ## Keeping apps up to date
 
-An app pinned to a commit doesn't pick up changes by itself. [`docs/consumer-update-workflow.yml`](docs/consumer-update-workflow.yml) is a GitHub Actions workflow you can copy into an app's `.github/workflows/`. On a schedule (and whenever this repo notifies it), it finds the newest commit on `main`, updates the dependency and lockfile, and opens a pull request that lists the changes. You review and merge it like any other PR.
+An app pinned to a commit or a version doesn't pick up changes by itself. [`docs/consumer-update-workflow.yml`](docs/consumer-update-workflow.yml) is a GitHub Actions workflow you can copy into an app's `.github/workflows/`. On a schedule (and whenever this repo notifies it), it finds the newest version on npm (for an app on a version) or the newest commit on `main` (for an app on a commit), updates the dependency and lockfile, and opens a pull request that lists the changes. You review and merge it like any other PR.
+
+The workflow only moves the dependency forward. If an app is pinned to a commit that is not on `main`, it fails and leaves the pin alone instead of replacing it with an older `main`. It never replaces a version with an older one either.
 
 To get those PRs right after a merge here, not just on the schedule, add a `CONSUMER_DISPATCH_TOKEN` secret to this repository and list the apps in `.github/workflows/notify-consumers.yml`. The token needs permission to send `repository_dispatch` events to those apps (for a fine-grained token, contents read and write).
 
@@ -384,7 +390,7 @@ Yes. Each uploaded screenshot has a **Mark up** button that opens an editor with
 
 ### Is it on npm?
 
-Not yet. Install it from GitHub, pinned to a commit (see [Add the package](#1-add-the-package)).
+Publishing is set up ([`publish.yml`](.github/workflows/publish.yml)), but until the first version is out, install it from GitHub, pinned to a commit (see [Add the package](#1-add-the-package)). Once it is on npm, prefer the npm version: it installs where GitHub downloads are blocked, and each release is a tagged, immutable version with provenance.
 
 ## Developing
 
@@ -398,6 +404,14 @@ If you add or change a Tailwind class in `src`, rebuild the prebuilt stylesheet 
 ```bash
 bun run build:css
 ```
+
+### Releasing
+
+With publishing on (the `NPM_PUBLISH` repository variable set to `true`), every merge to `main` whose `version` in `package.json` is not on npm yet is published, tagged `v<version>` and released on GitHub. The apps are then notified. A pull request that changes `src`, the prebuilt stylesheet or the dependencies must raise `version`, and CI checks this: patch for fixes, minor for new options or exports, major for breaking changes.
+
+To set publishing up on npmjs.com, add this repository and `publish.yml` as a trusted publisher for the package. The very first publish, before the package exists on npm, needs an `NPM_TOKEN` secret or a manual `npm publish`. Then set `NPM_PUBLISH` to `true`.
+
+### Trying a change in an app
 
 To try a change in an app before it's merged, link your local checkout:
 
