@@ -8,7 +8,9 @@
     "url": "https://github.com/AEGIS-Security-Investigations/prompt-this-spot"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./inspect-prompt": "./src/inspect-prompt.ts",
@@ -20,6 +22,7 @@
   "files": [
     "src",
     "styles/prompt-this-spot.css",
+    "CHANGELOG.md",
     "!src/**/*.test.ts",
     "!src/**/*.test.tsx"
   ],
@@ -34,6 +37,8 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "build:css": "tailwindcss -i styles/source.css -o styles/prompt-this-spot.css --optimize",
+    "check:package": "bun scripts/check-package.ts",
+    "test:consumer": "bun scripts/consumer-smoke.ts",
     "check": "bun run typecheck && bun run lint && bun test"
   },
   "dependencies": {

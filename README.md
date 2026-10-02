@@ -415,7 +415,19 @@ bun run build:css
 
 ### Releasing
 
-With publishing on (the `NPM_PUBLISH` repository variable set to `true`), every merge to `main` whose `version` in `package.json` is not on npm yet is published, tagged `v<version>` and released on GitHub. The apps are then notified. A pull request that changes `src`, the prebuilt stylesheet or the dependencies must raise `version`, and CI checks this: patch for fixes, minor for new options or exports, major for breaking changes.
+With publishing on (the `NPM_PUBLISH` repository variable set to `true`), every merge to `main` whose `version` in `package.json` is not on npm yet is published, tagged `v<version>` and released on GitHub, with that version's `CHANGELOG.md` section as the release notes. The apps are then notified. A pull request that changes `src`, the prebuilt stylesheet or the dependencies must raise `version` and add a `CHANGELOG.md` entry, and CI checks the version: patch for fixes, minor for new options or exports, major for breaking changes.
+
+Nothing is published while `NPM_PUBLISH` is unset, whatever triggers the workflow. A manual run of **Publish to npm** is a dry run unless its "publish" input is ticked as well. The workflow stops, rather than publishing, if it cannot tell whether the version is already on npm.
+
+Before any release, check exactly what would be uploaded:
+
+```bash
+bun run check:package     # packs the tarball: allowlisted files only, no secrets
+npm publish --dry-run --provenance=false   # uploads nothing
+bun run test:consumer     # installs the tarball into a fresh Next.js app and builds it
+```
+
+CI runs all three on every pull request.
 
 To set publishing up on npmjs.com, add this repository and `publish.yml` as a trusted publisher for the package. The very first publish, before the package exists on npm, needs an `NPM_TOKEN` secret or a manual `npm publish`. Then set `NPM_PUBLISH` to `true`.
 
