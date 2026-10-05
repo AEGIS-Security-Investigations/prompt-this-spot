@@ -9,8 +9,10 @@ permissions:
   contents: read
 
 jobs:
+  # Small package/fixture jobs use the existing 2-vCPU, 8-GB x64 tier.
+  # The real npm publish job stays GitHub-hosted for trusted publishing.
   check:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -24,7 +26,7 @@ jobs:
         run: bun run build:css && git diff --exit-code -- styles
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -44,7 +46,7 @@ jobs:
   # What `npm publish` would upload: allowlisted files only, no secrets, and a
   # dry-run publish that uploads nothing.
   package:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -60,7 +62,7 @@ jobs:
   # Install the packed tarball into a fresh Next.js app and build it, at the
   # versions the consuming apps run.
   consumer:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
