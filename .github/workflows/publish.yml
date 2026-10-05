@@ -41,6 +41,9 @@ jobs:
     # A push only does anything once publishing is switched on; a manual run
     # always runs, but see `real` below.
     if: vars.NPM_PUBLISH == 'true' || github.event_name == 'workflow_dispatch'
+    # npm trusted publishing requires a GitHub-hosted runner; keep this
+    # exception even though ordinary package CI runs on Blacksmith.
+    # https://docs.npmjs.com/trusted-publishers/
     runs-on: ubuntu-latest
     permissions:
       contents: write

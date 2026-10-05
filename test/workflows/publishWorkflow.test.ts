@@ -17,7 +17,14 @@ const workflow = Bun.YAML.parse(
   )
 ) as {
   on: Record<string, unknown>;
-  jobs: { publish: { steps: Step[]; outputs: Record<string, string> } };
+  jobs: {
+    publish: {
+      "runs-on": string;
+      permissions: Record<string, string>;
+      steps: Step[];
+      outputs: Record<string, string>;
+    };
+  };
 };
 
 const steps = workflow.jobs.publish.steps;
@@ -35,6 +42,14 @@ const GUARDS = [
 ];
 
 describe("publish.yml release guards", () => {
+  it("keeps npm trusted publishing on GitHub-hosted runners with OIDC", () => {
+    expect(workflow.jobs.publish["runs-on"]).toBe("ubuntu-latest");
+    expect(workflow.jobs.publish.permissions["id-token"]).toBe("write");
+    expect(steps.find((step) => step.name === "Publish")?.run).toContain(
+      "--provenance"
+    );
+  });
+
   it("has exactly the publish and release steps, each fully guarded", () => {
     expect(realPublishSteps.map((step) => step.name)).toEqual([
       "Publish",
