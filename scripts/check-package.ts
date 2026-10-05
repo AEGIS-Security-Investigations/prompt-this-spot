@@ -41,6 +41,7 @@ const ALLOWED_HOSTS = new Set([
   "claude.ai",
   "tailwindcss.com",
   "semver.org",
+  "registry.npmjs.org",
   "app.example.com",
 ]);
 

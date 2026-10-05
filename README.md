@@ -111,7 +111,9 @@ Change who sees each tool to suit your app.
 
 ### 1. Add the package
 
-This package is installed from GitHub, not from npm. Pin it to a commit so every install gets the same code:
+The npm package name is `@brotskyllc/prompt-this-spot`. After its first release, install a pinned version with `npm install --save-exact @brotskyllc/prompt-this-spot@0.1.0`.
+
+For source installs from GitHub, pin a commit so every install gets the same code:
 
 ```bash
 # Find the newest commit on main
@@ -128,7 +130,7 @@ npm, pnpm and Yarn take the same `github:owner/repo#sha` spec. Pinning to a comm
 
 Pin a commit that is on `main`. A commit from a pull request's branch can disappear once the branch is deleted, and every install of it then fails. The update workflow also refuses to move such a pin.
 
-Once a version is on npm, depend on that instead, pinned exactly: `bun add prompt-this-spot@<version> --exact`.
+Once a version is on npm, depend on that instead, pinned exactly: `bun add @brotskyllc/prompt-this-spot@<version> --exact`.
 
 ### 2. Let your bundler compile it
 
@@ -137,7 +139,7 @@ The package ships as TypeScript source, so your bundler has to compile it. In Ne
 ```js
 // next.config.js (or next.config.mjs / next.config.ts)
 module.exports = {
-  transpilePackages: ["prompt-this-spot"],
+  transpilePackages: ["@brotskyllc/prompt-this-spot"],
 };
 ```
 
@@ -149,13 +151,13 @@ Tailwind only generates classes it finds in files it scans, and it does not scan
 // Tailwind v3: tailwind.config.js
 content: [
   // ...
-  "./node_modules/prompt-this-spot/src/**/*.{ts,tsx}",
+  "./node_modules/@brotskyllc/prompt-this-spot/src/**/*.{ts,tsx}",
 ],
 ```
 
 ```css
 /* Tailwind v4: your global stylesheet. The path is relative to this file. */
-@source "../../node_modules/prompt-this-spot/src";
+@source "../../node_modules/@brotskyllc/prompt-this-spot/src";
 ```
 
 The tools use shadcn/ui theme tokens (`bg-card`, `text-muted-foreground`, `bg-popover`, `ring-ring`, `bg-primary`, `text-destructive`) and `tailwindcss-animate` classes (`animate-in`, `fade-in-0`, `zoom-in-95`). If your app uses shadcn/ui, these are already defined. If it doesn't, define those colors in your Tailwind theme and add `tailwindcss-animate` (or `tw-animate-css` on v4). Dark mode follows the `class` strategy (`<html class="dark">`).
@@ -165,7 +167,7 @@ The tools use shadcn/ui theme tokens (`bg-card`, `text-muted-foreground`, `bg-po
 Apps that don't run Tailwind import the compiled stylesheet once, for example in the root layout, and skip the content scan above:
 
 ```ts
-import "prompt-this-spot/styles.css";
+import "@brotskyllc/prompt-this-spot/styles.css";
 ```
 
 It holds only the classes the package uses, a reset scoped to the tools' own elements (everything marked `data-inspect-ignore`), the enter and exit animations, and default light and dark values for the theme colors. It doesn't restyle the rest of your app. To change a theme color, set its `--pts-*` custom property, for example `:root { --pts-primary: #0f766e; }`. The properties are `--pts-background`, `--pts-foreground`, `--pts-card`, `--pts-card-foreground`, `--pts-popover`, `--pts-popover-foreground`, `--pts-primary`, `--pts-primary-foreground`, `--pts-muted`, `--pts-muted-foreground`, `--pts-accent`, `--pts-accent-foreground`, `--pts-destructive`, `--pts-border`, `--pts-input` and `--pts-ring`.
@@ -174,7 +176,7 @@ Don't import it in an app that already scans the package with Tailwind: the two 
 
 #### Bundlers without tree shaking (Expo web)
 
-Metro, the bundler for Expo web, doesn't tree-shake, so importing from `prompt-this-spot` bundles both tools into your first page load, even for users who never see them. An app that only mounts "Prompt this spot" imports from `prompt-this-spot/inspect-prompt` instead. It has the provider, `createScreenshotUploader`, the preferences and launcher-stack providers and `InspectPromptToolGate`, and it loads the tool itself only when the gate opens.
+Metro, the bundler for Expo web, doesn't tree-shake, so importing from `@brotskyllc/prompt-this-spot` bundles both tools into your first page load, even for users who never see them. An app that only mounts "Prompt this spot" imports from `@brotskyllc/prompt-this-spot/inspect-prompt` instead. It has the provider, `createScreenshotUploader`, the preferences and launcher-stack providers and `InspectPromptToolGate`, and it loads the tool itself only when the gate opens.
 
 ### 4. Add a provider component
 
@@ -192,7 +194,7 @@ import {
   type PromptThisSpotConfig,
   PromptThisSpotProvider,
   UserFeedbackToolGate,
-} from "prompt-this-spot";
+} from "@brotskyllc/prompt-this-spot";
 import { useMemo } from "react";
 
 export function PromptThisSpot({ children }: { children: React.ReactNode }) {
@@ -288,7 +290,7 @@ export async function POST(request: Request) {
   }
 
   const png = Buffer.from(dataUrl.slice(prefix.length), "base64");
-  const blob = await put(`prompt-this-spot/${crypto.randomUUID()}.png`, png, {
+  const blob = await put(`@brotskyllc/prompt-this-spot/${crypto.randomUUID()}.png`, png, {
     access: "public",
     contentType: "image/png",
   });
@@ -314,8 +316,8 @@ Screenshot URLs are public, so anyone with a link can open the image. If your ap
 
 | Symptom | Fix |
 |---|---|
-| The build fails with "Unexpected token" or "Module parse failed" in `prompt-this-spot` | Add the package to `transpilePackages` (step 2). |
-| The drawers or launchers are unstyled, transparent or oddly placed | Tailwind isn't scanning the package (step 3), or the shadcn/ui color tokens aren't defined. Without Tailwind, import `prompt-this-spot/styles.css`. |
+| The build fails with "Unexpected token" or "Module parse failed" in `@brotskyllc/prompt-this-spot` | Add the package to `transpilePackages` (step 2). |
+| The drawers or launchers are unstyled, transparent or oddly placed | Tailwind isn't scanning the package (step 3), or the shadcn/ui color tokens aren't defined. Without Tailwind, import `@brotskyllc/prompt-this-spot/styles.css`. |
 | The drawer covers the page instead of pushing it aside | Add `data-app-push-root` to the element that wraps your app, and keep the gates outside it (step 4). |
 | No launcher appears | Check that `eligible` is true for the signed-in user. The "Prompt this spot" launcher can also be switched off through its `enabled` preference, which is stored in `localStorage`; read or reset it with `useInspectPromptPreferences()`. |
 | The feedback launcher is missing in Playwright or Cypress | Automated browsers don't see it unless the `sessionStorage` key in `feedbackE2eOptInStorageKey` is `"1"` (see [Configuration](#configuration)). |
@@ -395,7 +397,7 @@ Yes. Each uploaded screenshot has a **Mark up** button that opens an editor with
 
 ### Is it on npm?
 
-Publishing is set up ([`publish.yml`](.github/workflows/publish.yml)), but until the first version is out, install it from GitHub, pinned to a commit (see [Add the package](#1-add-the-package)). Once it is on npm, prefer the npm version: it installs where GitHub downloads are blocked, and each release is a tagged, immutable version with provenance.
+The public npm package is named `@brotskyllc/prompt-this-spot`. Check `npm view @brotskyllc/prompt-this-spot version` for availability; source installs can use a pinned GitHub commit (see [Add the package](#1-add-the-package)). The optional [publish workflow](.github/workflows/publish.yml) adds provenance and a GitHub release when enabled.
 
 ## Developing
 
@@ -429,7 +431,7 @@ bun run test:consumer     # installs the tarball into a fresh Next.js app and bu
 
 CI runs all three on every pull request.
 
-To set publishing up on npmjs.com, add this repository and `publish.yml` as a trusted publisher for the package. The very first publish, before the package exists on npm, needs an `NPM_TOKEN` secret or a manual `npm publish`. Then set `NPM_PUBLISH` to `true`.
+For an approved one-time release, publish the audited tarball with `npm publish <tarball> --access public --provenance=false --registry=https://registry.npmjs.org/` using an authorized npm account. This local route has no CI provenance and does not notify consumer apps. Leave `NPM_PUBLISH` unset unless ongoing automatic releases and consumer notifications are separately intended. Trusted publishing can be configured later by an owner; it is not required for this manual release.
 
 ### Trying a change in an app
 
@@ -439,7 +441,7 @@ To try a change in an app before it's merged, link your local checkout:
 # in this repo
 bun link
 # in the app
-bun link prompt-this-spot
+bun link @brotskyllc/prompt-this-spot
 ```
 
 Keep the package app-neutral. Anything that differs between apps (auth, storage, copy about a specific product, brand colors) belongs behind `PromptThisSpotConfig`, not in the code. Keep `data-testid` values stable, because apps' end-to-end tests select on them.
