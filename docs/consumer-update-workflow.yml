@@ -2,8 +2,8 @@
 # up to date.
 #
 # It follows whichever way the app depends on the package:
-#   "prompt-this-spot": "1.2.3"   -> the newest version published to npm
-#   "prompt-this-spot": "github:AEGIS-Security-Investigations/prompt-this-spot#<sha>"
+#   "@brotskyllc/prompt-this-spot": "1.2.3"   -> the newest version published to npm
+#   "@brotskyllc/prompt-this-spot": "github:AEGIS-Security-Investigations/prompt-this-spot#<sha>"
 #                                 -> the newest commit on main
 #
 # It only ever moves the dependency forward. If the app is pinned to a commit
@@ -42,7 +42,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     env:
-      PACKAGE: prompt-this-spot
+      PACKAGE: "@brotskyllc/prompt-this-spot"
       SOURCE_REPO: AEGIS-Security-Investigations/prompt-this-spot
       GH_TOKEN: ${{ github.token }}
     steps:

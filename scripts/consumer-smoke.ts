@@ -73,7 +73,7 @@ try {
           "lucide-react": versions.lucide,
           "@uiw/react-codemirror": "^4.25.11",
           "@codemirror/view": "^6.43.12",
-          "prompt-this-spot": `file:${join(work, packed.filename)}`,
+          "@brotskyllc/prompt-this-spot": process.env.PACKAGE_SPEC || `file:${join(work, packed.filename)}`,
         },
         devDependencies: {
           typescript: versions.typescript,
@@ -88,7 +88,7 @@ try {
   );
   write(
     join(app, "next.config.mjs"),
-    `export default { transpilePackages: ["prompt-this-spot"] };\n`
+    `export default { transpilePackages: ["@brotskyllc/prompt-this-spot"] };\n`
   );
   write(
     join(app, "tsconfig.json"),
@@ -114,7 +114,7 @@ try {
   );
   write(
     join(app, "app/layout.tsx"),
-    `import "prompt-this-spot/styles.css";
+    `import "@brotskyllc/prompt-this-spot/styles.css";
 import type { ReactNode } from "react";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -137,7 +137,7 @@ import {
   PromptThisSpotProvider,
   sanitizePageUrl,
   UserFeedbackToolGate,
-} from "prompt-this-spot";
+} from "@brotskyllc/prompt-this-spot";
 
 const config: PromptThisSpotConfig = {
   repoSlug: "example/app",
@@ -176,7 +176,7 @@ export default function Page() {
 import {
   InspectPromptToolGate,
   PromptThisSpotProvider,
-} from "prompt-this-spot/inspect-prompt";
+} from "@brotskyllc/prompt-this-spot/inspect-prompt";
 
 export default function Page() {
   return (
@@ -190,7 +190,7 @@ export default function Page() {
 
   run(["npm", "install", "--no-audit", "--no-fund"], app);
   const installed = Object.fromEntries(
-    ["next", "react", "typescript", "prompt-this-spot"].map((name) => [
+    ["next", "react", "typescript", "@brotskyllc/prompt-this-spot"].map((name) => [
       name,
       JSON.parse(readFileSync(join(app, "node_modules", name, "package.json"), "utf8")).version,
     ])
