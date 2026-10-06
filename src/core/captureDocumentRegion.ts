@@ -7,6 +7,7 @@ import { loadDeferredImages } from "./loadDeferredImages";
 import { pinScrollAnchoredElements } from "./pinScrollAnchoredElements";
 import { resolveCaptureRoot } from "./resolveCaptureRoot";
 import type { InspectCaptureRect } from "./types";
+import { withScreenshotTimeout } from "./withScreenshotTimeout";
 
 /** Marks the tool's own UI so it never appears in a screenshot. */
 const IGNORE_ATTR = "data-inspect-ignore";
@@ -25,6 +26,9 @@ const FALLBACK_BACKGROUND = "#ffffff";
 
 /** Gives up on a render that stalls on an image or font that never loads. */
 const CAPTURE_TIMEOUT_MS = 15_000;
+
+/** The library's resource timeout does not cover every stage (e.g. video seek). */
+const RENDER_TIMEOUT_MS = 20_000;
 
 const isTransparent = (color: string): boolean =>
   !color || color === "transparent" || color.startsWith("rgba(0, 0, 0, 0)");
@@ -150,17 +154,22 @@ export const captureDocumentRegion = async (
   // Otherwise a lazy image that never loads, such as one inside a
   // `display: none` box, holds the capture for the whole timeout.
   const restoreLazyImages = loadDeferredImages(root.element);
+  let active = true;
+  let context: Awaited<ReturnType<typeof createContext>> | undefined;
 
   try {
-    const context = await createContext(root.element, {
+    const contextPromise = createContext(root.element, {
       scale,
       backgroundColor: resolveBackdrop(root.element),
       timeout: CAPTURE_TIMEOUT_MS,
-      filter: (node) => !isIgnored(node) && isOnscreen(node),
+      filter: (node) => active && !isIgnored(node) && isOnscreen(node),
       // A scrolled panel (a table, a sidebar, the app's main pane) keeps the
       // rows the user can see instead of snapping back to its first row.
       features: { restoreScrollPosition: true },
       onCloneNode: (clone) => {
+        if (!active || !context) {
+          throw new Error("Screenshot capture stopped.");
+        }
         if (clone instanceof HTMLElement) {
           if (isDocument) {
             undoDocumentScrollShift(clone);
@@ -195,14 +204,26 @@ export const captureDocumentRegion = async (
           String(root.height + 2 * root.contentShift)
         );
       },
+    }).then((created) => {
+      // createContext can finish after the deadline while waiting for media.
+      // Dispose that late context instead of starting an abandoned render.
+      if (!active) {
+        destroyContext(created);
+        throw new Error("Screenshot capture stopped.");
+      }
+      context = created;
+      return domToPng(created);
     });
-
-    try {
-      return await domToPng(context);
-    } finally {
+    return await withScreenshotTimeout(
+      contextPromise,
+      RENDER_TIMEOUT_MS,
+      "Screenshot capture timed out. Retry or remove this screenshot to continue."
+    );
+  } finally {
+    active = false;
+    if (context) {
       destroyContext(context);
     }
-  } finally {
     restoreLazyImages();
     pins.release();
   }

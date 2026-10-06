@@ -1,6 +1,6 @@
 {
   "name": "@brotskyllc/prompt-this-spot",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Point at a spot in a React app, capture it, and hand an AI coding agent a ready-made prompt — or file it as user feedback.",
   "license": "MIT",
   "repository": {

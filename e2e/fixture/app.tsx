@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  createScreenshotUploader,
   FloatingLauncherStackProvider,
   InspectPromptPreferencesProvider,
   InspectPromptToolGate,
@@ -25,7 +26,11 @@ declare global {
 window.fixtureFeedback = [];
 
 let shotCount = 0;
-const fakeUpload = async () => {
+const httpUpload = createScreenshotUploader("/fixture-upload");
+const fakeUpload = async (dataUrl: string) => {
+  if (new URLSearchParams(window.location.search).has("httpUpload")) {
+    return httpUpload(dataUrl);
+  }
   shotCount += 1;
   return { url: `https://cdn.example.test/shot-${shotCount}.png` };
 };
