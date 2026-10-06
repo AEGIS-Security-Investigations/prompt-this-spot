@@ -1,4 +1,7 @@
 import type { CaptureScreenshotUploader } from "../core/types";
+import { withScreenshotTimeout } from "../core/withScreenshotTimeout";
+
+const UPLOAD_TIMEOUT_MS = 20_000;
 
 const readErrorMessage = async (response: Response): Promise<string> => {
   try {
@@ -24,15 +27,26 @@ const readErrorMessage = async (response: Response): Promise<string> => {
 export const createScreenshotUploader =
   (path: string): CaptureScreenshotUploader =>
   async (dataUrl) => {
-    const response = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dataUrl }),
-    });
+    const controller = new AbortController();
+    try {
+      return await withScreenshotTimeout(
+        (async () => {
+          const response = await fetch(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl }),
+            signal: controller.signal,
+          });
 
-    if (!response.ok) {
-      throw new Error(await readErrorMessage(response));
+          if (!response.ok) {
+            throw new Error(await readErrorMessage(response));
+          }
+          return response.json();
+        })(),
+        UPLOAD_TIMEOUT_MS,
+        "Screenshot upload timed out. Retry or remove this screenshot to continue."
+      );
+    } finally {
+      controller.abort();
     }
-
-    return response.json();
   };

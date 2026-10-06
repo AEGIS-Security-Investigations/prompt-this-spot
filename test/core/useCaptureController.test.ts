@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from "bun:test";
+import { afterEach, describe, expect, it, jest, mock } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
 
 // Picking an element also queues a real browser render + upload. Neither
@@ -25,6 +25,8 @@ const upload = mock(async () => ({
 const renderController = () =>
   renderHook(() => useCaptureController({ upload, screenshotsEnabled: true }));
 
+afterEach(() => jest.useRealTimers());
+
 const makeElement = (html: string): Element => {
   const host = document.createElement("div");
   host.innerHTML = html;
@@ -33,6 +35,113 @@ const makeElement = (html: string): Element => {
 };
 
 describe("useCaptureController", () => {
+  it("removing a hung capture releases actions and ignores its late result", async () => {
+    let finish!: (value: string) => void;
+    captureDocumentRegion.mockImplementationOnce(
+      () =>
+        new Promise<string>((resolve) => {
+          finish = resolve;
+        })
+    );
+    const { result } = renderController();
+    const button = makeElement('<button data-testid="late">Late</button>');
+    await act(async () => result.current.addSelection(button, "/p"));
+    act(() => result.current.setRequest("Keep this request"));
+    expect(result.current.capturing).toBe(true);
+    const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
+    const uploadsBefore = upload.mock.calls.length;
+
+    act(() => result.current.removeScreenshot(id));
+    expect(result.current.capturing).toBe(false);
+    expect(result.current.selections).toHaveLength(1);
+    expect(result.current.request).toBe("Keep this request");
+    await act(async () => finish("data:image/png;base64,late"));
+    expect(result.current.screenshots).toHaveLength(0);
+    expect(result.current.getScreenshotSource(id)).toBeUndefined();
+    expect(upload.mock.calls.length).toBe(uploadsBefore);
+  });
+
+  it("times out a hung capture, advances the queue, and retries without losing context", async () => {
+    jest.useFakeTimers();
+    let finish!: (value: string) => void;
+    captureDocumentRegion.mockImplementationOnce(
+      () =>
+        new Promise<string>((resolve) => {
+          finish = resolve;
+        })
+    );
+    const { result } = renderController();
+    const button = makeElement(
+      '<button data-testid="timeout">Timed out</button>'
+    );
+    await act(async () => result.current.addSelection(button, "/p"));
+    act(() => result.current.setRequest("Fix this spot"));
+    await act(async () => result.current.capturePageScreenshot());
+    expect(result.current.capturing).toBe(true);
+    await act(async () => jest.advanceTimersByTime(25_000));
+    const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
+    expect(result.current.screenshots[0]?.status).toBe("failed");
+    expect(result.current.screenshots[0]?.error).toContain("capture timed out");
+    expect(result.current.screenshots[1]?.status).toBe("ready");
+    expect(result.current.capturing).toBe(false);
+    expect(result.current.selections).toHaveLength(1);
+    expect(result.current.request).toBe("Fix this spot");
+    await act(async () => result.current.retryScreenshot(id));
+    expect(result.current.screenshots[0]?.status).toBe("ready");
+    await act(async () => finish("data:image/png;base64,late"));
+    expect(result.current.getScreenshotSource(id)).toBe(
+      "data:image/png;base64,stub"
+    );
+    expect(result.current.screenshots).toHaveLength(2);
+  });
+
+  it("times out an injected uploader and never accepts its late URL", async () => {
+    jest.useFakeTimers();
+    let finish!: (value: { url: string; expiresAt: string }) => void;
+    upload.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    const { result } = renderController();
+    await act(async () => result.current.capturePageScreenshot());
+    expect(result.current.screenshots[0]?.status).toBe("uploading");
+    await act(async () => jest.advanceTimersByTime(20_000));
+    expect(result.current.screenshots[0]?.status).toBe("failed");
+    expect(result.current.screenshots[0]?.error).toContain("upload timed out");
+    expect(result.current.capturing).toBe(false);
+    await act(async () =>
+      finish({
+        url: "https://cdn.example.com/late.png",
+        expiresAt: "2030-01-01",
+      })
+    );
+    expect(result.current.screenshots[0]?.url).toBeNull();
+    expect(result.current.screenshots[0]?.status).toBe("failed");
+  });
+
+  it("clearAll releases actions and skips captures removed from the queue", async () => {
+    let finish!: (value: string) => void;
+    captureDocumentRegion.mockImplementationOnce(
+      () =>
+        new Promise<string>((resolve) => {
+          finish = resolve;
+        })
+    );
+    const { result } = renderController();
+    await act(async () => result.current.capturePageScreenshot());
+    const capturesBefore = captureDocumentRegion.mock.calls.length;
+    await act(async () => result.current.capturePageScreenshot());
+    act(() => result.current.clearAll());
+    expect(result.current.capturing).toBe(false);
+    await act(async () => finish("data:image/png;base64,late"));
+    expect(result.current.screenshots).toHaveLength(0);
+    expect(captureDocumentRegion.mock.calls.length).toBe(capturesBefore);
+    await act(async () => result.current.capturePageScreenshot());
+    expect(result.current.screenshots[0]?.status).toBe("ready");
+  });
+
   it("opens the drawer when pick mode turns on", () => {
     const { result } = renderController();
     expect(result.current.drawerOpen).toBe(false);

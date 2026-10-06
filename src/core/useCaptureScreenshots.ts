@@ -16,6 +16,7 @@ import type {
   InspectPromptScreenshots,
 } from "./types";
 import { withAppPushSuppressed } from "./withAppPushSuppressed";
+import { withScreenshotTimeout } from "./withScreenshotTimeout";
 
 /**
  * Owns the tool's screenshots: rasterizing a region of the live page, uploading
@@ -31,7 +32,6 @@ export const useCaptureScreenshots = (
 ): InspectPromptScreenshots => {
   const { logError } = usePromptThisSpotConfig();
   const [screenshots, setScreenshots] = useState<InspectPromptScreenshot[]>([]);
-  const [pending, setPending] = useState(0);
   /** Tail of the capture queue; every new capture chains onto it. */
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   /**
@@ -61,14 +61,22 @@ export const useCaptureScreenshots = (
   /** Chain one capture→upload run for `id` onto the tail of the queue. */
   const run = useCallback(
     (id: string, capture: () => Promise<string>) => {
-      setPending((count) => count + 1);
-
       queueRef.current = queueRef.current
         .then(async () => {
+          if (!capturesRef.current.has(id)) {
+            return;
+          }
           const dataUrl = await capture();
+          if (!capturesRef.current.has(id)) {
+            return;
+          }
           patch(id, { previewDataUrl: dataUrl, status: "uploading" });
 
-          const uploaded = await upload(dataUrl);
+          const uploaded = await withScreenshotTimeout(
+            upload(dataUrl),
+            20_000,
+            "Screenshot upload timed out. Retry or remove this screenshot to continue."
+          );
           patch(id, {
             url: uploaded.url,
             expiresAt: uploaded.expiresAt ?? null,
@@ -84,10 +92,12 @@ export const useCaptureScreenshots = (
         .catch((error: unknown) => {
           const message =
             error instanceof Error ? error.message : "Screenshot failed";
-          logError("Screenshot failed", { err: error, screenshotId: id });
+          if (!capturesRef.current.has(id)) {
+            return;
+          }
           patch(id, { status: "failed", error: message });
-        })
-        .finally(() => setPending((count) => Math.max(0, count - 1)));
+          logError("Screenshot failed", { err: error, screenshotId: id });
+        });
     },
     [logError, patch, upload]
   );
@@ -99,8 +109,14 @@ export const useCaptureScreenshots = (
     ) => {
       const id = makeInspectPromptId("shot");
       const captureAndKeep = async () => {
-        const dataUrl = await capture();
-        sourcesRef.current.set(id, dataUrl);
+        const dataUrl = await withScreenshotTimeout(
+          capture(),
+          25_000,
+          "Screenshot capture timed out. Retry or remove this screenshot to continue."
+        );
+        if (capturesRef.current.get(id) === captureAndKeep) {
+          sourcesRef.current.set(id, dataUrl);
+        }
         return dataUrl;
       };
       setScreenshots((prev) => [...prev, { ...draft, id }]);
@@ -240,7 +256,11 @@ export const useCaptureScreenshots = (
   return useMemo(
     () => ({
       screenshots,
-      busy: pending > 0,
+      // Removed or cleared work must not keep Copy/Send disabled. The queue
+      // still serializes rendering and late completions cannot restore rows.
+      busy: screenshots.some(
+        (shot) => shot.status === "capturing" || shot.status === "uploading"
+      ),
       capturePage,
       captureElement,
       retryScreenshot,
@@ -253,7 +273,6 @@ export const useCaptureScreenshots = (
     }),
     [
       screenshots,
-      pending,
       capturePage,
       captureElement,
       retryScreenshot,
