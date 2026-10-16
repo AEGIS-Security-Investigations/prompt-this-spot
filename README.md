@@ -431,7 +431,14 @@ bun run test:consumer     # installs the tarball into a fresh Next.js app and bu
 
 CI runs all three on every pull request.
 
-For an approved one-time release, publish the audited tarball with `npm publish <tarball> --access public --provenance=false --registry=https://registry.npmjs.org/` using an authorized npm account. This local route has no CI provenance and does not notify consumer apps. Leave `NPM_PUBLISH` unset unless ongoing automatic releases and consumer notifications are separately intended. Trusted publishing can be configured later by an owner; it is not required for this manual release.
+For an approved one-time release, publish the audited tarball with `npm publish <tarball> --access public --provenance=false --registry=https://registry.npmjs.org/` using an authorized npm account. This local route has no CI provenance and does not notify consumer apps. This local route is a fallback; releases normally go out automatically.
+
+To turn automatic publishing on, an owner does both of these once:
+
+1. On npmjs.com, open the package's **Settings > Trusted publishing** and add GitHub Actions with this repository and the workflow file `publish.yml` (no environment). An `NPM_TOKEN` repository secret holding a granular automation token with publish rights works instead.
+2. In this repository, add the Actions variable `NPM_PUBLISH` with the value `true`.
+
+While `NPM_PUBLISH` is unset, a push to `main` whose version is not on npm fails the **Publish to npm** run and names the version, so an unpublished release can't go unnoticed.
 
 ### Trying a change in an app
 

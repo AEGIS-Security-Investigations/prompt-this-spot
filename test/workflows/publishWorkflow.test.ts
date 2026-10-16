@@ -24,6 +24,7 @@ const workflow = Bun.YAML.parse(
       steps: Step[];
       outputs: Record<string, string>;
     };
+    "publishing-off": { if: string; steps: Step[] };
   };
 };
 
@@ -99,5 +100,16 @@ describe("publish.yml release guards", () => {
     expect((workflow.on.push as { branches: string[] }).branches).toEqual([
       "main",
     ]);
+  });
+
+  it("fails a push to main when publishing is off and the version is not on npm", () => {
+    const off = workflow.jobs["publishing-off"];
+    expect(off.if).toContain("vars.NPM_PUBLISH != 'true'");
+    expect(off.if).toContain("github.event_name == 'push'");
+    const run = off.steps.map((step) => step.run ?? "").join("\n");
+    expect(run).toContain("bun scripts/npm-version-status.ts");
+    expect(run).toContain("|| exit 1");
+    expect(run).toContain("::error");
+    expect(run).not.toMatch(/npm publish|gh release/);
   });
 });
