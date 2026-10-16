@@ -11,6 +11,8 @@
 export * from "./config/PromptThisSpotConfig";
 export * from "./floating-launchers/FloatingLauncherStackProvider";
 export { createScreenshotUploader } from "./lib/createScreenshotUploader";
+export { createLinearIssueSubmitter } from "./linear/createLinearIssueSubmitter";
+export type * from "./linear/linearIssueTypes";
 export {
   InspectPromptPreferencesProvider,
   useInspectPromptPreferences,

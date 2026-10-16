@@ -258,3 +258,27 @@ export const inspectPromptRawModalClose = cn(
 export const inspectPromptRawModalFooter = cn(
   "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"
 );
+
+/** The "Create Linear ticket" dialog: the raw-prompt modal, narrower. */
+export const inspectPromptLinearModalContent = cn(
+  inspectPromptRawModalContent,
+  "w-[calc(100%-2rem)] max-w-md"
+);
+
+export const inspectPromptLinearTitleInput = cn(
+  "w-full rounded-md border px-3 py-2 font-mono text-xs",
+  "border-violet-200 bg-white text-zinc-800 placeholder:text-zinc-400",
+  "focus-visible:border-violet-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40",
+  "dark:border-violet-500/25 dark:bg-[#07050c] dark:text-zinc-200 dark:placeholder:text-zinc-600",
+  "dark:focus-visible:border-violet-400/40 dark:focus-visible:ring-violet-500/50"
+);
+
+export const inspectPromptLinearError = cn(
+  "font-mono text-[11px] leading-relaxed text-red-600 dark:text-red-400"
+);
+
+/** "Created ENG-123" under the button once a ticket is filed. */
+export const inspectPromptLinearCreatedLink = cn(
+  "flex items-center justify-center gap-1 font-mono text-[11px] font-medium",
+  "text-violet-700 underline-offset-2 hover:underline dark:text-violet-300"
+);

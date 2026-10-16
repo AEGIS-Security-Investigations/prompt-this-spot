@@ -14,6 +14,7 @@ import {
   defaultUserFeedbackTheme,
   type UserFeedbackTheme,
 } from "../feedback/userFeedbackTheme";
+import type { LinearIssueCreator } from "../linear/linearIssueTypes";
 
 /** A toast the tools want shown. Shaped like shadcn/ui's `toast()` argument. */
 export interface PromptThisSpotToast {
@@ -85,6 +86,13 @@ export interface PromptThisSpotConfig {
    * the agent, so it reads the links now rather than storing them.
    */
   promptScreenshotRetentionDays?: number;
+  /**
+   * Files the "Prompt this spot" drawer's contents as a Linear ticket. Shows a
+   * "Create Linear ticket" button when set. Pass
+   * `createLinearIssueSubmitter("/api/…")` and keep the Linear API key in that
+   * route (see `@brotskyllc/prompt-this-spot/server`), never in the browser.
+   */
+  createLinearIssue?: LinearIssueCreator;
   /** Stores a "Send feedback" screenshot and returns its public URL. */
   uploadFeedbackScreenshot?: CaptureScreenshotUploader;
   /** Persists a feedback report. Reject with an `Error` to show its message. */
@@ -108,6 +116,7 @@ export interface ResolvedPromptThisSpotConfig {
   uploadPromptScreenshot: CaptureScreenshotUploader;
   promptScreenshotsToggle: boolean;
   promptScreenshotRetentionDays: number;
+  createLinearIssue: LinearIssueCreator | undefined;
   uploadFeedbackScreenshot: CaptureScreenshotUploader;
   submitFeedback: (submission: UserFeedbackSubmission) => Promise<void>;
   feedbackCategories: UserFeedbackCategoryOption[];
@@ -136,6 +145,7 @@ export const resolvePromptThisSpotConfig = (
   uploadPromptScreenshot: config.uploadPromptScreenshot ?? noUploader,
   promptScreenshotsToggle: config.promptScreenshotsToggle ?? false,
   promptScreenshotRetentionDays: config.promptScreenshotRetentionDays ?? 7,
+  createLinearIssue: config.createLinearIssue,
   uploadFeedbackScreenshot: config.uploadFeedbackScreenshot ?? noUploader,
   submitFeedback: config.submitFeedback ?? noSubmit,
   feedbackCategories:

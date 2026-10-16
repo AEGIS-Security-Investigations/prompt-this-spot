@@ -43,6 +43,8 @@ const ALLOWED_HOSTS = new Set([
   "semver.org",
   "registry.npmjs.org",
   "app.example.com",
+  "api.linear.app",
+  "linear.app",
 ]);
 
 const run = (cmd: string[], cwd: string) => {

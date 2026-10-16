@@ -33,7 +33,7 @@ It helps two groups of people:
 
 It ships two tools that share one capture core:
 
-- **Prompt this spot** (element inspector for AI prompts): an engineer clicks the parts of a page they want changed, types what they want, and gets a prompt for an AI coding agent. The prompt describes each element (DOM path, visible text, styles) and links a screenshot of it. They can copy the prompt, open it in Claude Code on the web, or open it in a local Claude Code install. The keyboard shortcut is ⌘/Ctrl + Shift + P.
+- **Prompt this spot** (element inspector for AI prompts): an engineer clicks the parts of a page they want changed, types what they want, and gets a prompt for an AI coding agent. The prompt describes each element (DOM path, visible text, styles) and links a screenshot of it. They can copy the prompt, open it in Claude Code on the web, open it in a local Claude Code install, or file it as a Linear ticket. The keyboard shortcut is ⌘/Ctrl + Shift + P.
 - **Send feedback** (in-app feedback and bug report widget): a user of the app points at what's wrong, adds screenshots, picks a category and describes the problem. The report goes to your backend with the same AI prompt already assembled, so someone triaging it can hand it straight to an agent.
 
 Both tools also:
@@ -304,6 +304,49 @@ Any storage that gives back a public URL works the same way (S3, Cloudflare R2, 
 
 Screenshot URLs are public, so anyone with a link can open the image. If your app shows sensitive data, keep the links unguessable (as above) and delete old screenshots on a schedule.
 
+### Optional: create Linear tickets
+
+"Prompt this spot" can file what's in the drawer as a Linear ticket through the [Linear API](https://linear.app/developers). The ticket gets the request, the page URL, the screenshots and the full prompt, so whoever picks it up can hand it straight to a coding agent. The button only appears when you set `createLinearIssue`.
+
+The Linear API key stays on your server. Create a key under Linear's **Settings → Security & access → Personal API keys** (tickets are filed as that key's user), then set two environment variables:
+
+| Variable | Value |
+|---|---|
+| `LINEAR_API_KEY` | the API key |
+| `LINEAR_TEAM` | the team's key, such as `ENG` (the prefix of its ticket IDs), or the team's ID |
+
+Add a route with `createLinearIssueRoute`, imported from the package's server entry so the key never reaches the browser bundle:
+
+```ts
+// app/api/prompt-this-spot/linear-issue/route.ts
+import { createLinearIssueRoute } from "@brotskyllc/prompt-this-spot/server";
+
+export const POST = createLinearIssueRoute({
+  authorize: async () => Boolean((await getCurrentUser())?.isAdmin), // your auth
+  apiKey: process.env.LINEAR_API_KEY,
+  team: process.env.LINEAR_TEAM,
+  // Copy screenshots stored here into Linear, so they outlive your retention.
+  copyScreenshotsFrom: ["https://app.example.com/prompt-this-spot/"],
+});
+```
+
+Then point the drawer at it in your config:
+
+```ts
+import { createLinearIssueSubmitter } from "@brotskyllc/prompt-this-spot";
+
+createLinearIssue: createLinearIssueSubmitter("/api/prompt-this-spot/linear-issue"),
+```
+
+What the route does:
+
+- It refuses the request with 403 unless `authorize` returns true, and answers 503 while either environment variable is unset, so the button shows "Linear isn't set up for this app yet." instead of failing silently.
+- Screenshots whose URL starts with one of `copyScreenshotsFrom` are downloaded and uploaded to Linear, and the ticket links Linear's copy. Any other screenshot stays a plain link, and the route never fetches it. Leave the option out and every screenshot stays a link, which stops working when your storage deletes it.
+- `labelIds`, `projectId` and `stateId` put every ticket on those labels, that project and that workflow state.
+- Errors from Linear (a revoked key, an unknown team) come back as the route's `{ error }`, and the dialog shows them. The key is never part of a message.
+
+`createLinearIssue` can also be any function of your own that takes the `LinearIssueDraft` (title, Markdown description, screenshots, page URL) and returns `{ identifier, url }`. The server entry also exports `createLinearIssue(draft, options)` for apps that don't use `Request`/`Response` route handlers.
+
 ### Check that it works
 
 1. Sign in as a user who is eligible for "Prompt this spot" and reload the app. Its launcher appears in a corner of the page.
@@ -337,6 +380,7 @@ Every field of `PromptThisSpotConfig` is optional:
 | `uploadPromptScreenshot` / `uploadFeedbackScreenshot` | throws | Screenshot storage (see above) |
 | `promptScreenshotRetentionDays` | `7` | How many days "Prompt this spot" tells the agent the screenshot links last; match it to what your storage keeps |
 | `promptScreenshotsToggle` | `false` | Shows a "Capture screenshots" checkbox in the "Prompt this spot" drawer, for apps without a settings UI of their own for that preference |
+| `createLinearIssue` | none | Files the "Prompt this spot" drawer as a Linear ticket and shows the "Create Linear ticket" button (see [Optional: create Linear tickets](#optional-create-linear-tickets)) |
 | `submitFeedback` | throws | Feedback storage (see above) |
 | `feedbackCategories` | Broken / Confusing / Idea / Praise / Other | `{ value, label }[]` for the feedback form; the first one is preselected |
 | `feedbackTheme` | neutral blue | Tailwind class overrides for any part of the feedback widget (see `defaultUserFeedbackTheme`) |
