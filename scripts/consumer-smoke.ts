@@ -6,8 +6,8 @@
  *   NEXT_VERSION=16.3.3 REACT_VERSION=19.2.5 TYPESCRIPT_VERSION=6.0.3 \
  *   LUCIDE_VERSION=1.11.0 bun scripts/consumer-smoke.ts
  *
- * Checks: `next build` succeeds (both entry points), `tsc --noEmit` passes
- * under strict flags, the prebuilt stylesheet reaches the CSS output, and the
+ * Checks: `next build` succeeds (both browser entry points, and the server
+ * entry in a route), `tsc --noEmit` passes under strict flags, the prebuilt stylesheet reaches the CSS output, and the
  * server-rendered page runs package code.
  */
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -185,6 +185,18 @@ export default function Page() {
     </PromptThisSpotProvider>
   );
 }
+`
+  );
+
+  write(
+    join(app, "app/api/linear-issue/route.ts"),
+    `import { createLinearIssueRoute } from "@brotskyllc/prompt-this-spot/server";
+
+export const POST = createLinearIssueRoute({
+  authorize: () => false,
+  apiKey: process.env.LINEAR_API_KEY,
+  team: process.env.LINEAR_TEAM,
+});
 `
   );
 

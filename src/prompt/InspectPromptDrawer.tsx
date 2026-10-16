@@ -211,6 +211,13 @@ export const InspectPromptDrawer = ({
           onCopy={handleCopy}
           onOpenLocal={handleOpenLocal}
           onSendToWeb={handleSendToWeb}
+          linearIssueInput={{
+            request,
+            prompt: rawPrompt,
+            selections,
+            screenshots,
+            currentPageUrl: currentPageUrl ?? undefined,
+          }}
         />
       </div>
     </div>

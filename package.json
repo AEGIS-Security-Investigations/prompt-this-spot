@@ -1,7 +1,7 @@
 {
   "name": "@brotskyllc/prompt-this-spot",
-  "version": "0.1.1",
-  "description": "Point at a spot in a React app, capture it, and hand an AI coding agent a ready-made prompt — or file it as user feedback.",
+  "version": "0.2.0",
+  "description": "Point at a spot in a React app, capture it, and hand an AI coding agent a ready-made prompt, file it as a Linear ticket, or file it as user feedback.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -14,6 +14,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./inspect-prompt": "./src/inspect-prompt.ts",
+    "./server": "./src/server.ts",
     "./styles.css": "./styles/prompt-this-spot.css",
     "./package.json": "./package.json"
   },

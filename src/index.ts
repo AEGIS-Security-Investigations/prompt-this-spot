@@ -43,6 +43,10 @@ export * from "./floating-launchers/floatingLauncherStack";
 export * from "./floating-launchers/useFloatingLauncherSlot";
 export { cn } from "./lib/cn";
 export { createScreenshotUploader } from "./lib/createScreenshotUploader";
+// Linear tickets (the API key lives in the app's route; see "./server")
+export * from "./linear/buildLinearIssueDraft";
+export { createLinearIssueSubmitter } from "./linear/createLinearIssueSubmitter";
+export type * from "./linear/linearIssueTypes";
 export * from "./prompt/claudeCodeLinks";
 export * from "./prompt/formatInspectPromptShortcutLabel";
 export {

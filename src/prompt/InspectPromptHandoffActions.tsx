@@ -1,6 +1,8 @@
 "use client";
 
 import { Check, Copy, Sparkles, Terminal } from "lucide-react";
+import type { LinearIssueDraftInput } from "../linear/buildLinearIssueDraft";
+import { InspectPromptLinearIssueButton } from "./InspectPromptLinearIssueButton";
 import { InspectPromptRawPreview } from "./InspectPromptRawPreview";
 import {
   inspectPromptActionButton,
@@ -18,12 +20,14 @@ interface InspectPromptHandoffActionsProps {
   onCopy: () => Promise<void>;
   onOpenLocal: () => void;
   onSendToWeb: () => void;
+  /** What a Linear ticket is built from, when the app can create one. */
+  linearIssueInput: LinearIssueDraftInput;
 }
 
 /**
- * The drawer's hand-off block: the raw-prompt preview plus the three ways to
- * get the assembled prompt out — clipboard, a locally installed Claude Code,
- * and Claude Code on the web.
+ * The drawer's hand-off block: the raw-prompt preview plus the ways to get the
+ * assembled prompt out — clipboard, a locally installed Claude Code, a Linear
+ * ticket (when the app configures one) and Claude Code on the web.
  *
  * Split out of `InspectPromptDrawer` to keep that file under the repo's
  * 250-line cap; these controls move together and share one disabled state.
@@ -37,6 +41,7 @@ export const InspectPromptHandoffActions = ({
   onCopy,
   onOpenLocal,
   onSendToWeb,
+  linearIssueInput,
 }: InspectPromptHandoffActionsProps) => (
   <div className="flex flex-col gap-2">
     <InspectPromptRawPreview
@@ -74,6 +79,11 @@ export const InspectPromptHandoffActions = ({
       <Terminal className="h-3.5 w-3.5 shrink-0" />
       Open in local Claude Code
     </button>
+    <InspectPromptLinearIssueButton
+      input={linearIssueInput}
+      disabled={disabled}
+      onStopPick={onStopPick}
+    />
     <button
       type="button"
       className={inspectPromptPrimaryAction}

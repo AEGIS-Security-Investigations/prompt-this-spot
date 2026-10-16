@@ -11,6 +11,7 @@ import {
   FloatingLauncherStackProvider,
   InspectPromptPreferencesProvider,
   InspectPromptToolGate,
+  type LinearIssueDraft,
   type PromptThisSpotConfig,
   PromptThisSpotProvider,
   type UserFeedbackSubmission,
@@ -20,10 +21,12 @@ import {
 declare global {
   interface Window {
     fixtureFeedback: UserFeedbackSubmission[];
+    fixtureLinearIssues: LinearIssueDraft[];
   }
 }
 
 window.fixtureFeedback = [];
+window.fixtureLinearIssues = [];
 
 let shotCount = 0;
 const httpUpload = createScreenshotUploader("/fixture-upload");
@@ -43,6 +46,11 @@ const config: PromptThisSpotConfig = {
     window.fixtureFeedback.push(submission);
   },
   feedbackE2eOptInStorageKey: "fixture:e2e-user-feedback",
+  createLinearIssue: async (draft) => {
+    window.fixtureLinearIssues.push(draft);
+    const identifier = `FIX-${window.fixtureLinearIssues.length}`;
+    return { identifier, url: `https://linear.example.test/${identifier}` };
+  },
 };
 
 /** Client-side navigation, the way a router does it: no reload. */
