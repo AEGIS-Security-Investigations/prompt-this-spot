@@ -27,6 +27,21 @@ const renderController = () =>
 
 afterEach(() => jest.useRealTimers());
 
+/**
+ * Fire fake timers, then drain the promise chain they start (timeout →
+ * rejected race → queue catch → state patch) before `act` returns. React's own
+ * tail after an async act waits only a couple of microtasks, so leaving the
+ * drain to it let the patch land after act closed, unflushed, on slower CI
+ * runners.
+ */
+const advanceTimers = (ms: number) =>
+  act(async () => {
+    jest.advanceTimersByTime(ms);
+    for (let tick = 0; tick < 50; tick++) {
+      await Promise.resolve();
+    }
+  });
+
 const makeElement = (html: string): Element => {
   const host = document.createElement("div");
   host.innerHTML = html;
@@ -78,7 +93,7 @@ describe("useCaptureController", () => {
     act(() => result.current.setRequest("Fix this spot"));
     await act(async () => result.current.capturePageScreenshot());
     expect(result.current.capturing).toBe(true);
-    await act(async () => jest.advanceTimersByTime(25_000));
+    await advanceTimers(25_000);
     const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
     expect(result.current.screenshots[0]?.status).toBe("failed");
     expect(result.current.screenshots[0]?.error).toContain("capture timed out");
@@ -107,7 +122,7 @@ describe("useCaptureController", () => {
     const { result } = renderController();
     await act(async () => result.current.capturePageScreenshot());
     expect(result.current.screenshots[0]?.status).toBe("uploading");
-    await act(async () => jest.advanceTimersByTime(20_000));
+    await advanceTimers(20_000);
     expect(result.current.screenshots[0]?.status).toBe("failed");
     expect(result.current.screenshots[0]?.error).toContain("upload timed out");
     expect(result.current.capturing).toBe(false);
