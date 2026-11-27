@@ -47,6 +47,14 @@ const ALLOWED_HOSTS = new Set([
   "linear.app",
 ]);
 
+// Reviewed public attribution URLs, allowed only as complete quoted README links.
+const README_BRAND_URLS = new Set([
+  "https://www.prlane.com/",
+  "https://www.prlane.com/brand/prlane/prlane-symbol-dark.png",
+  "https://www.brotskydesigns.com/",
+  "https://www.brotskydesigns.com/apple-touch-icon.png",
+]);
+
 const run = (cmd: string[], cwd: string) => {
   const result = Bun.spawnSync(cmd, { cwd, stdout: "pipe", stderr: "pipe" });
   if (result.exitCode !== 0) {
@@ -90,7 +98,13 @@ try {
         problems.push(`${label} in ${file}: ${match[0].slice(0, 12)}…`);
       }
     }
-    for (const [, host] of text.matchAll(/https?:\/\/([A-Za-z0-9.-]+)/g)) {
+    for (const match of text.matchAll(/https?:\/\/([A-Za-z0-9.-]+)/g)) {
+      const [, host] = match;
+      const start = match.index ?? 0;
+      const quotedUrl = text[start - 1] === '"' ? text.slice(start).split('"', 1)[0] : "";
+      if (file === "README.md" && quotedUrl && README_BRAND_URLS.has(quotedUrl)) {
+        continue;
+      }
       if (host && !ALLOWED_HOSTS.has(host)) {
         problems.push(`unreviewed host in ${file}: ${host}`);
       }
