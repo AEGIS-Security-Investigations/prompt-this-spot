@@ -57,7 +57,10 @@ jobs:
           node-version: 24
       - run: bun install --frozen-lockfile
       - run: bun run check:package
-      - run: npm publish --dry-run --provenance=false
+      - name: Rehearse publishing offline
+        # A package on npm is still valid to rehearse; only real publishes
+        # should consult the registry for version availability.
+        run: npm publish --dry-run --offline --cache "$(mktemp -d)" --provenance=false
 
   # Install the packed tarball into a fresh Next.js app and build it, at the
   # versions the consuming apps run.
