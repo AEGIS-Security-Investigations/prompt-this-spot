@@ -3,6 +3,8 @@
 <p>
   <a href="https://www.prlane.com/"><img src="https://www.prlane.com/brand/prlane/prlane-symbol-dark.png" width="24" alt=""> Proudly uses PRLane</a>
   ·
+  <a href="https://www.myguardforce.com/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.myguardforce.com/myguardforce-logo-dark.svg"><img src="https://www.myguardforce.com/myguardforce-logo.png" width="24" height="24" alt=""></picture> Used on MyGuardForce.com</a>
+  ·
   <a href="https://www.brotskydesigns.com/"><img src="https://www.brotskydesigns.com/apple-touch-icon.png" width="24" height="24" alt=""> By Brotsky</a>, LLC
 </p>
 
