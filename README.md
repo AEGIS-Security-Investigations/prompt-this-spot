@@ -3,7 +3,7 @@
 <p>
   <a href="https://www.prlane.com/"><img src="https://www.prlane.com/brand/prlane/prlane-symbol-dark.png" width="24" alt=""> Proudly uses PRLane</a>
   ·
-  <a href="https://www.brotskydesigns.com/"><img src="https://www.brotskydesigns.com/apple-touch-icon.png" width="24" height="24" alt=""> By Brotsky Designs</a>
+  <a href="https://www.brotskydesigns.com/"><img src="https://www.brotskydesigns.com/apple-touch-icon.png" width="24" height="24" alt=""> By Brotsky</a>, LLC
 </p>
 
 **prompt-this-spot** is an open-source React component library that turns "this button here" into a precise prompt for an AI coding agent such as Claude Code, Cursor or GitHub Copilot. You click the parts of a page you want changed, type what you want, and it writes a prompt that names each element by its visible text, HTML tag, attributes, CSS classes and DOM path, with a screenshot link attached. The same capture core also powers an in-app **user feedback widget** with screenshots and bug reports.
