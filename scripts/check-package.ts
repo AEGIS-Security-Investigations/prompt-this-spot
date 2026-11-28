@@ -8,6 +8,7 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { parseSinglePackagePackResult } from "./lib/npmPackResult";
 
 /** The only paths a published tarball may contain. */
 const ALLOWED = [
@@ -74,12 +75,13 @@ const work = mkdtempSync(join(tmpdir(), "pts-pack-"));
 const problems: string[] = [];
 
 try {
-  const [packed] = JSON.parse(
-    run(["npm", "pack", "--json", "--pack-destination", work], root)
-  ) as { filename: string; entryCount: number; size: number }[];
-  if (!packed) {
-    throw new Error("npm pack produced no tarball");
-  }
+  const { name } = JSON.parse(
+    readFileSync(join(root, "package.json"), "utf8")
+  ) as { name: string };
+  const packed = parseSinglePackagePackResult(
+    run(["npm", "pack", "--json", "--pack-destination", work], root),
+    name
+  );
   run(["tar", "-xzf", join(work, packed.filename), "-C", work], root);
   const pkgDir = join(work, "package");
   const files = walk(pkgDir).map((path) => relative(pkgDir, path)).sort();

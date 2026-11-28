@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, jest, mock } from "bun:test";
-import { act, renderHook } from "@testing-library/react";
+import { afterEach, describe, expect, it, mock } from "bun:test";
+import { act, renderHook, waitFor } from "@testing-library/react";
 
 // Picking an element also queues a real browser render + upload. Neither
 // exists under happy-dom, so stub the two edges and keep this a state test.
@@ -25,22 +25,37 @@ const upload = mock(async () => ({
 const renderController = () =>
   renderHook(() => useCaptureController({ upload, screenshotsEnabled: true }));
 
-afterEach(() => jest.useRealTimers());
+// Control only the screenshot deadline. Leave React and happy-dom's scheduling
+// real so async act can finish and flush the next item in the queue.
+const useManualDeadline = (milliseconds: number) => {
+  const nativeSetTimeout = globalThis.setTimeout;
+  let expire: (() => void) | undefined;
+  globalThis.setTimeout = Object.assign(
+    (...[callback, delay, ...args]: Parameters<typeof nativeSetTimeout>) => {
+      if (delay === milliseconds && typeof callback === "function" && !expire) {
+        expire = () => callback(...args);
+      }
+      return nativeSetTimeout(callback, delay, ...args);
+    },
+    nativeSetTimeout
+  );
+  return {
+    fire: async () => {
+      expect(expire).toBeDefined();
+      await act(async () => expire?.());
+    },
+    restore: () => {
+      globalThis.setTimeout = nativeSetTimeout;
+    },
+  };
+};
 
-/**
- * Fire fake timers, then drain the promise chain they start (timeout →
- * rejected race → queue catch → state patch) before `act` returns. React's own
- * tail after an async act waits only a couple of microtasks, so leaving the
- * drain to it let the patch land after act closed, unflushed, on slower CI
- * runners.
- */
-const advanceTimers = (ms: number) =>
-  act(async () => {
-    jest.advanceTimersByTime(ms);
-    for (let tick = 0; tick < 50; tick++) {
-      await Promise.resolve();
-    }
-  });
+let restoreDeadline: (() => void) | undefined;
+
+afterEach(() => {
+  restoreDeadline?.();
+  restoreDeadline = undefined;
+});
 
 const makeElement = (html: string): Element => {
   const host = document.createElement("div");
@@ -77,7 +92,8 @@ describe("useCaptureController", () => {
   });
 
   it("times out a hung capture, advances the queue, and retries without losing context", async () => {
-    jest.useFakeTimers();
+    const deadline = useManualDeadline(25_000);
+    restoreDeadline = deadline.restore;
     let finish!: (value: string) => void;
     captureDocumentRegion.mockImplementationOnce(
       () =>
@@ -93,11 +109,13 @@ describe("useCaptureController", () => {
     act(() => result.current.setRequest("Fix this spot"));
     await act(async () => result.current.capturePageScreenshot());
     expect(result.current.capturing).toBe(true);
-    await advanceTimers(25_000);
+    await deadline.fire();
+    await waitFor(() =>
+      expect(result.current.screenshots[1]?.status).toBe("ready")
+    );
     const { id } = result.current.screenshots[0] as InspectPromptScreenshot;
     expect(result.current.screenshots[0]?.status).toBe("failed");
     expect(result.current.screenshots[0]?.error).toContain("capture timed out");
-    expect(result.current.screenshots[1]?.status).toBe("ready");
     expect(result.current.capturing).toBe(false);
     expect(result.current.selections).toHaveLength(1);
     expect(result.current.request).toBe("Fix this spot");
@@ -111,7 +129,8 @@ describe("useCaptureController", () => {
   });
 
   it("times out an injected uploader and never accepts its late URL", async () => {
-    jest.useFakeTimers();
+    const deadline = useManualDeadline(20_000);
+    restoreDeadline = deadline.restore;
     let finish!: (value: { url: string; expiresAt: string }) => void;
     upload.mockImplementationOnce(
       () =>
@@ -121,8 +140,10 @@ describe("useCaptureController", () => {
     );
     const { result } = renderController();
     await act(async () => result.current.capturePageScreenshot());
-    expect(result.current.screenshots[0]?.status).toBe("uploading");
-    await advanceTimers(20_000);
+    await waitFor(() =>
+      expect(result.current.screenshots[0]?.status).toBe("uploading")
+    );
+    await deadline.fire();
     expect(result.current.screenshots[0]?.status).toBe("failed");
     expect(result.current.screenshots[0]?.error).toContain("upload timed out");
     expect(result.current.capturing).toBe(false);
