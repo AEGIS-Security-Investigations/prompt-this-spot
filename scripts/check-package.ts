@@ -50,6 +50,9 @@ const ALLOWED_HOSTS = new Set([
 
 // Reviewed public attribution URLs, allowed only as complete quoted README links.
 const README_BRAND_URLS = new Set([
+  "https://www.myguardforce.com/",
+  "https://www.myguardforce.com/myguardforce-logo-dark.svg",
+  "https://www.myguardforce.com/myguardforce-logo.png",
   "https://www.prlane.com/",
   "https://www.prlane.com/brand/prlane/prlane-symbol-dark.png",
   "https://www.brotskydesigns.com/",
